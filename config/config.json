@@ -2,21 +2,21 @@
   "development": {
     "username": "balabi4359",
     "password": "Aliolkac4310*",
-    "database": "database_development",
+    "database": "movierec",
     "host": "157.173.104.238",
     "dialect": "mysql"
   },
   "test": {
     "username": "balabi4359",
     "password": "Aliolkac4310*",
-    "database": "database_test",
+    "database": "movierec",
     "host": "157.173.104.238",
     "dialect": "mysql"
   },
   "production": {
     "username": "balabi4359",
     "password": "Aliolkac4310*",
-    "database": "database_production",
+    "database": "movierec",
     "host": "157.173.104.238",
     "dialect": "mysql"
   }
