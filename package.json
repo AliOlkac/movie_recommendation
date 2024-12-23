@@ -14,6 +14,7 @@
     "@types/react-dom": "19.0.2",
     "autoprefixer": "10.4.20",
     "bcrypt": "^5.1.1",
+    "cookie": "^1.0.2",
     "dotenv": "^16.4.7",
     "eslint": "9.17.0",
     "eslint-config-next": "15.1.2",
