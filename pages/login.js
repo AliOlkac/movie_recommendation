@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link'; // Link bileşenini ekleyin
+import Image from 'next/image';
+
+
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -28,9 +32,11 @@ export default function LoginPage() {
         <div className="bg-base-200 min-h-screen flex items-center justify-center">
             <div className="card lg:card-side bg-base-100 shadow-xl max-w-4xl w-full">
                 <figure className="lg:w-1/2">
-                    <img
+                    <Image
                         src="https://picsum.photos/seed/login/800/600"
                         alt="Random image"
+                        width={800}
+                        height={600}
                         className="object-cover w-full h-full"
                     />
                 </figure>
@@ -98,10 +104,10 @@ export default function LoginPage() {
                     </form>
                     <div className="divider">OR</div>
                     <div className="text-center">
-                        <p>Don't have an account?</p>
-                        <a href="/register" className="link link-primary">
+                        <p>Dont have an account</p>
+                        <Link href="/register" className="link link-primary">
                             Sign up now
-                        </a>
+                        </Link>
                     </div>
                     {message && <p className="text-red-500 mt-4">{message}</p>}
                 </div>
