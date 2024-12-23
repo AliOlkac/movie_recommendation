@@ -1,31 +1,17 @@
-import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
-
 export function middleware(req) {
     const { pathname } = req.nextUrl;
 
-    // Eğer kullanıcı kayıt veya giriş sayfasındaysa geç
-    if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
-        return NextResponse.next();
-    }
+    if (pathname === '/dashboard') {
+        const token = req.cookies.token;
 
-    // Token'ı kontrol et
-    const token = req.cookies.token || req.headers.get('Authorization')?.split(' ')[1];
-
-    if (token) {
-        try {
-            jwt.verify(token, JWT_SECRET);
-            return NextResponse.next();
-        } catch (error) {
-            return NextResponse.redirect('/login');
+        if (!token) {
+            return NextResponse.redirect(new URL('/login', req.nextUrl.origin)); // Mutlak URL kullanılıyor
         }
-    } else {
-        return NextResponse.redirect('/login');
     }
+
+    return NextResponse.next();
 }
 
 export const config = {
-    matcher: ['/dashboard', '/favorites', '/recommendations'], // Korunmasını istediğiniz yollar
+    matcher: ['/dashboard'],
 };
