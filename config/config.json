@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "balabi4359",
+    "password": "Aliolkac4310*",
+    "database": "database_development",
+    "host": "157.173.104.238",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "balabi4359",
+    "password": "Aliolkac4310*",
+    "database": "database_test",
+    "host": "157.173.104.238",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "balabi4359",
+    "password": "Aliolkac4310*",
+    "database": "database_production",
+    "host": "157.173.104.238",
+    "dialect": "mysql"
+  }
+}
