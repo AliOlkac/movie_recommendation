@@ -26,7 +26,8 @@ export default function SearchBar({ onMovieSelect }: SearchBarProps) {
     };
 
     return (
-        <div className="flex flex-col items-center">
+        <div className="relative flex flex-col items-center">
+            {/* Arama Çubuğu */}
             <input
                 type="text"
                 value={searchTerm}
@@ -38,8 +39,11 @@ export default function SearchBar({ onMovieSelect }: SearchBarProps) {
                 Search
             </button>
 
+            {/* Arama Sonuçları */}
             {searchResults.length > 0 && (
-                <ul className="mt-4 w-full max-w-xs">
+                <ul
+                    className="absolute top-full mt-4 w-full max-w-lg bg-black bg-opacity-95 text-white rounded-lg shadow-lg p-4 flex flex-col items-center z-50"
+                >
                     {searchResults.map((movie: any) => (
                         <li
                             key={movie.id}
@@ -48,14 +52,16 @@ export default function SearchBar({ onMovieSelect }: SearchBarProps) {
                                 setSearchTerm("");
                                 setSearchResults([]);
                             }}
-                            className="flex items-center cursor-pointer p-2 hover:bg-gray-200"
+                            className="flex items-center cursor-pointer p-2 hover:bg-gray-700 rounded w-full"
                         >
-                            <img
-                                src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
-                                alt={movie.title}
-                                className="w-12 h-18 mr-4 object-cover"
-                            />
-                            <span>{movie.title}</span>
+                            {movie.poster_path && (
+                                <img
+                                    src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
+                                    alt={movie.title}
+                                    className="w-12 h-18 mr-4 object-cover rounded"
+                                />
+                            )}
+                            <span className="truncate">{movie.title}</span>
                         </li>
                     ))}
                 </ul>

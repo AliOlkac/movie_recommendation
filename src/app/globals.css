@@ -16,12 +16,56 @@
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+.favorites-item,
+.watched-item {
+  margin-left: 10px; /* Yazıyı sağa kaydırır */
 }
+
+.star {
+  font-size: 2rem;
+  cursor: pointer;
+  color: gray;
+}
+
+.star:hover,
+.star.active {
+  color: gold;
+}
+
+/* StarRating hizalaması için */
+.star-rating-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.btn-favorite {
+  background-color: #ff0000; /* Kırmızı arka plan */
+  color: white; /* Yazı rengi beyaz */
+}
+
+.btn-favorite:hover {
+  background-color: #cc0000; /* Hover'da daha koyu kırmızı */
+}
+
+.favorites-list {
+  margin-top: 1.5rem; /* Yukarıdan biraz boşluk ekler */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-image: url('/background.jpg'); /* Arka plan resminizi çağırır */
+  background-size: cover; /* Resmi tam genişliğe veya yüksekliğe sığdırır */
+  background-repeat: repeat-y; /* Yalnızca dikey olarak tekrar eder */
+  background-position: center; /* Resmi yatayda ortalar */
+  background-attachment: fixed; /* Arka plan kaydırma ile hareket etmez */
+  min-height: 100vh; /* Minimum ekran yüksekliği */
+}
+
+
+
+
+
+
+

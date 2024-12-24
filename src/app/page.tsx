@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import SearchBar from "./components/SearchBar";
 import FavoritesList from "./components/FavoritesList";
 import MoviesWatchedList from "./components/MoviesWatchedList";
+import StarRating from "./components/StarRating"; // StarRating bileşenini import ettik
 
 interface Movie {
     id: number;
@@ -20,24 +21,45 @@ export default function Home() {
     const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>([]);
     const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
     const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-    const [rating, setRating] = useState<number>(0);
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 
     useEffect(() => {
-        const fetchPopularMovies = async () => {
+        const fetchMovies = async () => {
             try {
-                const response = await fetch(
+                // Ana popüler filmleri al
+                const responseMain = await fetch(
                     `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}`
                 );
-                const data = await response.json();
-                setPopularMovies(data.results.slice(0, 30));
+                const dataMain = await responseMain.json();
+                const limitedMovies = dataMain.results.slice(0, 20);
+
+                // Komedi türünden filmleri al
+                const responseComedy = await fetch(
+                    `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=35`
+                );
+                const dataComedy = await responseComedy.json();
+
+                // Çakışmayan komedi filmlerini seç
+                const comedyMovies = dataComedy.results.filter(
+                    (comedyMovie:any) =>
+                        !limitedMovies.some((mainMovie:any) => mainMovie.id === comedyMovie.id)
+                );
+
+                // İlk 4 komedi filmini seç
+                const extraMovies = comedyMovies.slice(0, 4);
+
+                // Ana filmler ve ekstra komedi filmlerini birleştir
+                const moviesWithExtras = [...limitedMovies, ...extraMovies];
+
+                setPopularMovies(moviesWithExtras);
             } catch (error) {
-                console.error("Error fetching popular movies:", error);
+                console.error("Error fetching movies:", error);
             }
         };
 
-        fetchPopularMovies();
+        fetchMovies();
     }, [apiKey]);
+
 
     const handleAddToFavorites = (movie: Movie) => {
         if (!favorites.find((fav) => fav.id === movie.id)) {
@@ -46,11 +68,10 @@ export default function Home() {
         }
     };
 
-    const handleAddToWatched = () => {
+    const handleAddToWatched = (rating: number) => {
         if (selectedMovie) {
             setWatchedMovies([...watchedMovies, { ...selectedMovie, rating }]);
             setSelectedMovie(null); // İzlenenlere eklenirse seçili film sıfırlanır
-            setRating(0);
         }
     };
 
@@ -76,40 +97,27 @@ export default function Home() {
                 </h1>
 
                 {/* Search Bar */}
-                <SearchBar onMovieSelect={setSelectedMovie} />
+                <SearchBar onMovieSelect={setSelectedMovie}/>
 
                 {/* Orta Pencere: Seçilen Film */}
                 {selectedMovie && (
-                    <div className="mt-6 p-4 border border-gray-700 rounded shadow-md text-center">
+                    <div className="mt-6 p-4 border border-gray-700 rounded shadow-md text-center bg-black bg-opacity-75">
                         <img
                             src={`https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`}
                             alt={selectedMovie.title}
                             className="mx-auto"
                         />
-                        <h3 className="text-lg font-bold mt-2">{selectedMovie.title}</h3>
-                        <div className="mt-4 flex justify-center gap-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                    key={star}
-                                    onClick={() => setRating(star)}
-                                    className={star <= rating ? "text-yellow-500" : "text-gray-500"}
-                                >
-                                    ⭐
-                                </button>
-                            ))}
+                        <h3 className="text-lg font-bold mt-2 text-white">{selectedMovie.title}</h3>
+                        <div className="flex justify-center mt-2">
+                            {/* StarRating bileşeni */}
+                            <StarRating onRate={(rating) => handleAddToWatched(rating)} />
                         </div>
                         <div className="mt-4">
                             <button
-                                onClick={handleAddToWatched}
-                                className="btn btn-success mr-2"
-                            >
-                                Add to Watched
-                            </button>
-                            <button
                                 onClick={() => handleAddToFavorites(selectedMovie)}
-                                className="btn btn-primary"
+                                className="btn bg-white text-black border border-gray-300 hover:bg-gray-100"
                             >
-                                ❤ Add to Favorites
+                                <span className="text-red-500">❤</span> Add to Favorites
                             </button>
                         </div>
                     </div>
@@ -134,6 +142,7 @@ export default function Home() {
                         </div>
                     ))}
                 </div>
+
             </div>
         </div>
     );
