@@ -41,8 +41,8 @@ export default function Home() {
 
                 // Çakışmayan komedi filmlerini seç
                 const comedyMovies = dataComedy.results.filter(
-                    (comedyMovie:any) =>
-                        !limitedMovies.some((mainMovie:any) => mainMovie.id === comedyMovie.id)
+                    (comedyMovie: any) =>
+                        !limitedMovies.some((mainMovie: any) => mainMovie.id === comedyMovie.id)
                 );
 
                 // İlk 4 komedi filmini seç
@@ -60,6 +60,14 @@ export default function Home() {
         fetchMovies();
     }, [apiKey]);
 
+    // Filme tıklandığında ekranı yukarı kaydırma fonksiyonu
+    const handleMovieClick = (movie: Movie) => {
+        setSelectedMovie(movie);
+        window.scrollTo({
+            top: 0, // Sayfanın en üst kısmına kaydır
+            behavior: "smooth", // Animasyonlu kaydırma
+        });
+    };
 
     const handleAddToFavorites = (movie: Movie) => {
         if (!favorites.find((fav) => fav.id === movie.id)) {
@@ -97,11 +105,21 @@ export default function Home() {
                 </h1>
 
                 {/* Search Bar */}
-                <SearchBar onMovieSelect={setSelectedMovie}/>
+                <SearchBar onMovieSelect={setSelectedMovie} />
 
                 {/* Orta Pencere: Seçilen Film */}
                 {selectedMovie && (
-                    <div className="mt-6 p-4 border border-gray-700 rounded shadow-md text-center bg-black bg-opacity-75">
+                    <div
+                        className="relative mt-6 p-4 border border-gray-700 rounded shadow-md text-center bg-black bg-opacity-75"
+                    >
+                        {/* Çarpı Butonu */}
+                        <button
+                            className="absolute top-4 right-4 text-white bg-purple-700 rounded-full p-3 hover:bg-purple-900 hover:scale-110 transition transform duration-200 ease-in-out shadow-lg"
+                            onClick={() => setSelectedMovie(null)}
+                        >
+                            ✕
+                        </button>
+
                         <img
                             src={`https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`}
                             alt={selectedMovie.title}
@@ -129,7 +147,7 @@ export default function Home() {
                         <div
                             key={movie.id}
                             className="card shadow-md p-2 bg-base-100 cursor-pointer"
-                            onClick={() => setSelectedMovie(movie)}
+                            onClick={() => handleMovieClick(movie)} // Güncel fonksiyon
                         >
                             <h3 className="text-sm font-bold">{movie.title}</h3>
                             {movie.poster_path && (
@@ -142,7 +160,6 @@ export default function Home() {
                         </div>
                     ))}
                 </div>
-
             </div>
         </div>
     );

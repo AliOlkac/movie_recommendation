@@ -51,6 +51,9 @@
 .favorites-list {
   margin-top: 1.5rem; /* Yukarıdan biraz boşluk ekler */
 }
+.favorites-list-header{
+  margin-top: 0.8rem;
+}
 
 body {
   margin: 0;
@@ -62,6 +65,131 @@ body {
   background-attachment: fixed; /* Arka plan kaydırma ile hareket etmez */
   min-height: 100vh; /* Minimum ekran yüksekliği */
 }
+
+/* Arama sonuçları için stil */
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  cursor: pointer;
+}
+
+li:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+/* Arama sonuçlarını düzenleme */
+ul.search-results {
+  position: absolute; /* Mutlak konumlandırma */
+  top: 60px; /* Arama kutusunun altına yerleştirme */
+  left: 50%;
+  transform: translateX(-50%); /* Ortalamak için */
+  background-color: rgba(0, 0, 0, 0.98); /* Opak siyah arka plan */
+  z-index: 10; /* Diğer içeriklerin üzerinde durmasını sağlar */
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+  padding: 10px 0;
+}
+
+/* Liste öğelerini güzelleştirme */
+ul.search-results li {
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+ul.search-results li:hover {
+  background-color: rgba(255, 255, 255, 0.2); /* Hover durumunda arka plan değişimi */
+}
+
+ul.search-results img {
+  width: 50px;
+  height: 75px;
+  object-fit: cover;
+  margin-right: 10px;
+}
+
+.watched-movies-list {
+  margin-top: 1.5rem; /* Yukarıdan biraz boşluk ekler */
+}
+
+.watched-movies-list p {
+  margin-left: 1rem; /* Yazıyı sola kaydırır */
+}
+
+.watched-movies-list button {
+  width: 2rem; /* Çarpı butonunu küçültür */
+  height: 2rem; /* Çarpı butonunu küçültür */
+  font-size: 0.875rem; /* Çarpı işaretini küçültür */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.watched-movies-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.8rem; /* Üst boşluk ekler */
+  padding-right: 0.8rem; /* Sağda düğme ile boşluk bırakır */
+}
+
+.watched-movies-header h2 {
+  margin: 0;
+  font-size: 1.25rem; /* Başlık boyutunu ayarlar */
+}
+
+.watched-movies-header button {
+  margin: 0;
+  padding: 0;
+}
+
+/* Movies Watched Button */
+.watched-button {
+  position: fixed;
+  top: 4rem; /* Sabit bir üst boşluk */
+  right: 1rem; /* Sağda sabit */
+  width: 3.5rem; /* Buton genişliği */
+  height: 3.5rem; /* Buton yüksekliği */
+  background-color: #28a745; /* Yeşil renk */
+  border-radius: 50%; /* Yuvarlak buton */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  cursor: pointer;
+}
+
+.watched-button:hover {
+  background-color: #218838; /* Daha koyu yeşil */
+}
+
+.watched-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 20rem;
+  background-color: #343a40; /* Arka plan rengi */
+  color: white;
+  padding: 1rem;
+  z-index: 40;
+  overflow-y: auto;
+}
+
 
 
 

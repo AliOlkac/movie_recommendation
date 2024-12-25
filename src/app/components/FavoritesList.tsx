@@ -28,12 +28,9 @@ export default function FavoritesList({ favorites, onRemove }: FavoritesListProp
 
             {/* Favoriler Paneli */}
             {isOpen && (
-                <div
-                    className="fixed left-0 top-0 h-full w-64 bg-gray-800 text-white shadow-md p-4 overflow-y-auto z-40">
-                    <h2 className="text-xl font-bold mb-4" style={{paddingLeft: "4rem"}}>
-                        Favorites
-                    </h2>
-                    <ul className="favorites-list" style={{marginTop: '2rem'}}>
+                <div className="fixed left-0 top-0 h-full w-64 bg-gray-800 text-white shadow-md p-4 overflow-y-auto z-40">
+                    <h2 className="text-xl font mb-4 text-center favorites-list-header">Favorites</h2>
+                    <ul className="favorites-list mt-6">
                         {favorites.map((movie) => (
                             <li key={movie.id} className="flex items-center mb-4">
                                 <img
@@ -42,13 +39,22 @@ export default function FavoritesList({ favorites, onRemove }: FavoritesListProp
                                     className="w-12 h-18 mr-2 object-cover"
                                 />
                                 <div className="flex-1">
-                                    <p>{movie.title}</p>
+                                    <p className="font-medium text-white">{movie.title}</p>
                                 </div>
                                 <button
                                     onClick={() => onRemove(movie)}
-                                    className="text-red-500 hover:text-red-700"
+                                    className="ml-2 text-white bg-red-600 rounded-full p-2 hover:bg-red-800 transition transform duration-200 ease-in-out shadow-lg flex items-center justify-center"
                                 >
-                                    ✕
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
                                 </button>
                             </li>
                         ))}
