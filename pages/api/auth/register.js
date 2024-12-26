@@ -5,12 +5,11 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { username, email, password } = req.body;
         const bcrypt = require('bcryptjs');
-
+        const hashedPassword = await bcrypt.hash(password, 10);
 
 
         try {
-            // Şifreyi hash'le
-            const hashedPassword = await bcrypt.hash(password, 10);
+
 
             // Kullanıcıyı oluştur
             const newUser = await User.create({

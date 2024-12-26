@@ -13,7 +13,7 @@ const Movie = sequelize.define('Movie', {
     type: DataTypes.STRING, // Türleri saklamak için
   },
 }, {
-  tableName: 'movies',
+  tableName: 'Movies',
   timestamps: true, // createdAt ve updatedAt sütunları otomatik
 });
 
