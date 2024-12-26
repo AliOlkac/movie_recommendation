@@ -5,6 +5,13 @@ import User from '../../../models/user';
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { email, password } = req.body;
+        const bcrypt = require('bcryptjs');
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Invalid password' });
+        }
+
 
         try {
             // Kullanıcıyı bul

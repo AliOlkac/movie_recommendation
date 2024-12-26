@@ -4,6 +4,9 @@ import User from '../../../models/user';
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { username, email, password } = req.body;
+        const bcrypt = require('bcryptjs');
+
+
 
         try {
             // Şifreyi hash'le

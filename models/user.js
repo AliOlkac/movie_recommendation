@@ -1,7 +1,8 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/connection'); // Bağlantıyı config.js üzerinden alıyoruz.
+const { Model, DataTypes } = require('sequelize');
 
-const User = sequelize.define('User', {
+class User extends Model {}
+
+User.init({
   username: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -11,17 +12,16 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
-    validate: {
-      isEmail: true,
-    },
   },
   password: {
     type: DataTypes.STRING,
     allowNull: false,
   },
 }, {
+  sequelize, // Buraya bağladığınız sequelize nesnesini ekleyin
+  modelName: 'User',
   tableName: 'users',
-  timestamps: true, // createdAt ve updatedAt otomatik oluşturulur.
+  timestamps: true,
 });
 
 module.exports = User;
