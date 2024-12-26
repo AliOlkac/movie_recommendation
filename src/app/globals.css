@@ -143,6 +143,7 @@ ul.search-results img {
   justify-content: space-between;
   align-items: center;
   margin-top: 0.8rem; /* Üst boşluk ekler */
+  margin-left: 1.5rem ;
   padding-right: 0.8rem; /* Sağda düğme ile boşluk bırakır */
 }
 
@@ -156,39 +157,65 @@ ul.search-results img {
   padding: 0;
 }
 
-/* Movies Watched Button */
-.watched-button {
+/* Login ve sign up butonları */
+.header-buttons {
   position: fixed;
-  top: 4rem; /* Sabit bir üst boşluk */
-  right: 1rem; /* Sağda sabit */
-  width: 3.5rem; /* Buton genişliği */
-  height: 3.5rem; /* Buton yüksekliği */
-  background-color: #28a745; /* Yeşil renk */
-  border-radius: 50%; /* Yuvarlak buton */
+  top: 1rem;
+  right: 6rem; /* Watched Movies butonunun soluna yerleşmesi için ayar */
   display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 50;
+  gap: 0.5rem;
+  z-index: 50; /* Üstte görünmesi için z-index ayarı */
+}
+
+.header-buttons .btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  background-color: #4caf50; /* Temanıza uygun yeşil ton */
+  border: none;
+  transition: background-color 0.3s ease, transform 0.2s ease;
   cursor: pointer;
 }
 
-.watched-button:hover {
-  background-color: #218838; /* Daha koyu yeşil */
+.header-buttons .btn:hover {
+  background-color: #45a049; /* Hover için daha koyu yeşil ton */
+  transform: scale(1.05); /* Hafif büyütme efekti */
 }
 
-.watched-panel {
+.header-buttons .btn.sign-up {
+  background-color: #f44336; /* Temanıza uygun kırmızı ton */
+}
+
+.header-buttons .btn.sign-up:hover {
+  background-color: #e53935; /* Hover için daha koyu kırmızı ton */
+}
+
+.watched-movies-panel {
   position: fixed;
   right: 0;
   top: 0;
-  height: 100%;
-  width: 20rem;
-  background-color: #343a40; /* Arka plan rengi */
-  color: white;
+  height: 100%; /* Tam yükseklik */
+  width: 20rem; /* Daha geniş bir genişlik */
+  background-color: #1e293b; /* Lacivert arka plan */
+  color: white; /* Yazı rengi beyaz */
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3); /* Gölge efekti */
   padding: 1rem;
-  z-index: 40;
-  overflow-y: auto;
+  overflow-y: auto; /* Kaydırılabilirlik */
+  z-index: 50; /* Öncelikli görsel öğe */
 }
+
+.watched-movies-list {
+  margin-top: 1.5rem; /* Yukarıdan biraz boşluk */
+}
+
+.watched-movies-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem; /* Filmler arasında boşluk */
+}
+
 
 
 
