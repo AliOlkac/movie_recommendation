@@ -1,19 +1,22 @@
-'use strict';
-const { Model } = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
-  class Rating extends Model {
-    static associate(models) {
-      Rating.belongsTo(models.User, { foreignKey: 'userId' });
-      Rating.belongsTo(models.Movie, { foreignKey: 'movieId' });
-    }
-  }
-  Rating.init({
-    userId: { type: DataTypes.INTEGER, allowNull: false },
-    movieId: { type: DataTypes.INTEGER, allowNull: false },
-    score: { type: DataTypes.INTEGER, allowNull: false },
-  }, {
-    sequelize,
-    modelName: 'Rating',
-  });
-  return Rating;
-};
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/connection');
+
+const Rating = sequelize.define('Rating', {
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  movieId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  rating: {
+    type: DataTypes.FLOAT, // 0.5 ile 5.0 arasında puanlar için
+    allowNull: false,
+  },
+}, {
+  tableName: 'ratings',
+  timestamps: true, // createdAt ve updatedAt sütunları otomatik
+});
+
+module.exports = Rating;
