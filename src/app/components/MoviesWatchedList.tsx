@@ -20,13 +20,16 @@ export default function MoviesWatchedList({ watchedMovies, onRemove }: MoviesWat
 
     const handleSuggestMovies = async () => {
         const selectedMovies = watchedMovies
-            .sort((a, b) => b.rating - a.rating) // En beğenilen filmleri sırala
-            .slice(0, 10); // İlk 10 filmi seç
+            .sort((a, b) => b.rating - a.rating)
+            .slice(0, 10);
 
         const movieData = selectedMovies.map((movie) => ({
             film_adi: movie.title,
             yildiz_sayi: movie.rating,
         }));
+
+        // JSON verisini tarayıcı konsolunda göster
+        console.log("Gönderilen JSON Verisi:", JSON.stringify({ movies: movieData }));
 
         try {
             const response = await fetch("http://127.0.0.1:5000/recommend", {
@@ -36,11 +39,12 @@ export default function MoviesWatchedList({ watchedMovies, onRemove }: MoviesWat
             });
 
             const data = await response.json();
-            setRecommendations(data.recommendations); // API'den gelen öneriler
+            setRecommendations(data.recommendations);
         } catch (error) {
             console.error("Error fetching recommendations:", error);
         }
     };
+
 
     return (
         <>
@@ -78,7 +82,7 @@ export default function MoviesWatchedList({ watchedMovies, onRemove }: MoviesWat
                         ))}
                     </ul>
 
-                    {watchedMovies.length >= 10 && (
+                    {watchedMovies.length >= 5 && (
                         <button
                             className="w-full bg-blue-500 text-white py-2 px-4 rounded mt-4 hover:bg-blue-700"
                             onClick={handleSuggestMovies}
