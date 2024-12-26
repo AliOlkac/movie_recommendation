@@ -58,7 +58,7 @@
 body {
   margin: 0;
   padding: 0;
-  background-image: url('/background.jpg'); /* Arka plan resminizi çağırır */
+  background-image: url('../../public/background.jpg'); /* Arka plan resminizi çağırır */
   background-size: cover; /* Resmi tam genişliğe veya yüksekliğe sığdırır */
   background-repeat: repeat-y; /* Yalnızca dikey olarak tekrar eder */
   background-position: center; /* Resmi yatayda ortalar */

@@ -1,37 +1,39 @@
 'use strict';
-/** @type {import('sequelize-cli').Migration} */
+
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Movies', {
+    await queryInterface.createTable('movies', {
       id: {
-        allowNull: false,
+        type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
       },
       title: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false,
       },
-      genre: {
-        type: Sequelize.STRING
+      posterPath: {
+        type: Sequelize.STRING,
+        allowNull: true,
       },
-      overview: {
-        type: Sequelize.TEXT
-      },
-      cast: {
-        type: Sequelize.STRING
+      genres: {
+        type: Sequelize.STRING,
+        allowNull: true,
       },
       createdAt: {
+        type: Sequelize.DATE,
         allowNull: false,
-        type: Sequelize.DATE
+        defaultValue: Sequelize.NOW,
       },
       updatedAt: {
+        type: Sequelize.DATE,
         allowNull: false,
-        type: Sequelize.DATE
-      }
+        defaultValue: Sequelize.NOW,
+      },
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Movies');
-  }
+    await queryInterface.dropTable('movies');
+  },
 };

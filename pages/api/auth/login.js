@@ -1,49 +1,33 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { User } from '../../../models';
-import cookie from 'cookie';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+import User from '../../../models/user';
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    if (req.method === 'POST') {
+        const { email, password } = req.body;
 
-    const { email, password } = req.body;
+        try {
+            // Kullanıcıyı bul
+            const user = await User.findOne({ where: { email } });
 
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
-    }
+            if (!user) {
+                return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+            }
 
-    try {
-        // Kullanıcıyı bul
-        const user = await User.findOne({ where: { email } });
-        if (!user) {
-            return res.status(400).json({ error: 'Invalid credentials' });
+            // Şifreyi kontrol et
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            if (!isPasswordValid) {
+                return res.status(401).json({ error: 'Geçersiz şifre' });
+            }
+
+            // Token oluştur
+            const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+            res.status(200).json({ message: 'Giriş başarılı', token });
+        } catch (error) {
+            res.status(400).json({ error: 'Giriş başarısız', details: error.message });
         }
-
-        // Şifreyi kontrol et
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            return res.status(400).json({ error: 'Invalid credentials' });
-        }
-
-        // JWT oluştur
-        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-
-        // Cookie'ye token'ı ayarla
-        res.setHeader('Set-Cookie', cookie.serialize('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 7, // 1 hafta
-            sameSite: 'strict',
-            path: '/',
-        }));
-
-        return res.status(200).json({ message: 'Login successful' });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Internal server error' });
+    } else {
+        res.status(405).json({ error: 'Method not allowed' });
     }
 }

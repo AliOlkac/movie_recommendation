@@ -1,19 +1,20 @@
-'use strict';
-const { Model } = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
-  class Movie extends Model {
-    static associate(models) {
-      Movie.hasMany(models.Rating, { foreignKey: 'movieId' });
-    }
-  }
-  Movie.init({
-    title: { type: DataTypes.STRING, allowNull: false },
-    genre: DataTypes.STRING,
-    overview: DataTypes.TEXT,
-    cast: DataTypes.STRING,
-  }, {
-    sequelize,
-    modelName: 'Movie',
-  });
-  return Movie;
-};
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/connection');
+
+const Movie = sequelize.define('Movie', {
+  title: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  posterPath: {
+    type: DataTypes.STRING, // Poster URL'sini saklamak için
+  },
+  genres: {
+    type: DataTypes.STRING, // Türleri saklamak için
+  },
+}, {
+  tableName: 'movies',
+  timestamps: true, // createdAt ve updatedAt sütunları otomatik
+});
+
+module.exports = Movie;

@@ -91,6 +91,9 @@ export default function Home() {
         setWatchedMovies(watchedMovies.filter((wm) => wm.id !== movie.id));
     };
 
+
+
+
     return (
         <div className="flex">
             {/* Favoriler Paneli */}
