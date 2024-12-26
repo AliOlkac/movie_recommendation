@@ -1,17 +1,13 @@
+import { NextResponse } from 'next/server';
+
 export function middleware(req) {
-    const { pathname } = req.nextUrl;
-
-    if (pathname === '/dashboard') {
-        const token = req.cookies.token;
-
-        if (!token) {
-            return NextResponse.redirect(new URL('/login', req.nextUrl.origin)); // Mutlak URL kullanılıyor
-        }
+    const token = req.cookies.get('token');
+    if (!token) {
+        return NextResponse.redirect(new URL('/login', req.nextUrl.origin));
     }
-
-    return NextResponse.next();
 }
 
+// Middleware'in yalnızca belirli rotalarda çalışmasını sağlayın
 export const config = {
-    matcher: ['/dashboard'],
+    matcher: ['/page'], // Sadece /dashboard rotası için çalışır
 };

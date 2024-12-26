@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link'; // Link bileşenini ekleyin
-import Image from 'next/image';
-
-
+import Image from 'next/image'; // Görsel için import
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -14,17 +12,25 @@ export default function LoginPage() {
     async function handleSubmit(e) {
         e.preventDefault();
 
-        const res = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-        });
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
 
-        const data = await res.json();
-        if (res.ok) {
-            router.push('/dashboard');
-        } else {
-            setMessage(data.error || 'Login failed!');
+            const data = await res.json();
+
+            if (res.ok) {
+                // Başarılı girişte yönlendirme yap
+                router.push('/dashboard');
+            } else {
+                // Hata mesajını ayarla
+                setMessage(data.message || 'Login failed!');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            setMessage('An unexpected error occurred.');
         }
     }
 
@@ -43,6 +49,7 @@ export default function LoginPage() {
                 <div className="card-body lg:w-1/2">
                     <h2 className="card-title text-2xl font-bold mb-6">Login</h2>
                     <form onSubmit={handleSubmit}>
+                        {/* Email Input */}
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text">Email</span>
@@ -68,6 +75,8 @@ export default function LoginPage() {
                                 />
                             </div>
                         </div>
+
+                        {/* Password Input */}
                         <div className="form-control mt-4">
                             <label className="label">
                                 <span className="label-text">Password</span>
@@ -96,24 +105,30 @@ export default function LoginPage() {
                                 />
                             </div>
                         </div>
+
+                        {/* Login Button */}
                         <div className="form-control mt-6">
                             <button type="submit" className="btn btn-primary w-full">
                                 Login
                             </button>
                         </div>
                     </form>
+
+                    {/* Divider */}
                     <div className="divider">OR</div>
+
+                    {/* Sign Up Link */}
                     <div className="text-center">
-                        <p>Dont have an account</p>
+                        <p>Don&apos;t have an account?</p>
                         <Link href="/register" className="link link-primary">
                             Sign up now
                         </Link>
                     </div>
+
+                    {/* Error Message */}
                     {message && <p className="text-red-500 mt-4">{message}</p>}
                 </div>
             </div>
         </div>
     );
 }
-
-

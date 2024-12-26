@@ -1,13 +1,9 @@
+const sequelize = require('../config/connection'); // Doğru yolu kontrol edin
 const { Model, DataTypes } = require('sequelize');
 
 class User extends Model {}
 
 User.init({
-  username: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -18,9 +14,9 @@ User.init({
     allowNull: false,
   },
 }, {
-  sequelize, // Buraya bağladığınız sequelize nesnesini ekleyin
+  sequelize,
   modelName: 'User',
-  tableName: 'users',
+  tableName: 'Users', // Veritabanındaki tablo adını büyük harfle belirtin
   timestamps: true,
 });
 

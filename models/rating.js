@@ -15,7 +15,7 @@ const Rating = sequelize.define('Rating', {
     allowNull: false,
   },
 }, {
-  tableName: 'ratings',
+  tableName: 'Ratings',
   timestamps: true, // createdAt ve updatedAt sütunları otomatik
 });
 
