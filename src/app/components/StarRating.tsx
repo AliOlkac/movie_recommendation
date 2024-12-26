@@ -48,3 +48,4 @@ const StarRating: React.FC<StarRatingProps> = ({ onRate }) => {
 };
 
 export default StarRating;
+
