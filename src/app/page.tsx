@@ -14,7 +14,7 @@ interface Movie {
 
 interface Recommendation {
     title: string;
-    poster_path: string;
+    genres: string; // Flask API'den gelen tür bilgisi
 }
 
 interface WatchedMovie extends Movie {
@@ -27,16 +27,18 @@ export default function Home() {
     const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
     const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+    const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+    const [error, setError] = useState<string | null>(null); // Hata mesajı
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 
     useEffect(() => {
         const fetchMovies = async () => {
             try {
-                const responseMain = await fetch(
+                const response = await fetch(
                     `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}`
                 );
-                const dataMain = await responseMain.json();
-                setPopularMovies(dataMain.results.slice(0, 20));
+                const data = await response.json();
+                setPopularMovies(data.results.slice(0, 20));
             } catch (error) {
                 console.error("Error fetching movies:", error);
             }
@@ -45,27 +47,38 @@ export default function Home() {
     }, [apiKey]);
 
     const handleSuggestMovies = async () => {
+        setLoadingRecommendations(true);
+        setError(null); // Hata durumunu sıfırla
+
         const selectedMovies = watchedMovies
             .sort((a, b) => b.rating - a.rating)
             .slice(0, 10);
 
-        const movieData = selectedMovies.map((movie) => ({
-            film_adi: movie.title,
-            yildiz_sayi: movie.rating,
-        }));
+        const userRatings = selectedMovies.reduce<Record<string, number>>((acc, movie) => {
+            acc[movie.title] = movie.rating;
+            return acc;
+        }, {});
 
         try {
             const response = await fetch("http://127.0.0.1:5000/recommend", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ movies: movieData }),
+                body: JSON.stringify({ user_ratings: userRatings, top_n: 10 }),
             });
 
-            const data = await response.json();
-            setRecommendations(data.recommendations);
-            setPopularMovies([]); // Popüler filmleri temizle
+            if (response.ok) {
+                const data = await response.json();
+                setRecommendations(data || []);
+                setPopularMovies([]);
+            } else {
+                setError("Failed to fetch recommendations");
+                setRecommendations([]);
+            }
         } catch (error) {
             console.error("Error fetching recommendations:", error);
+            setError("Error fetching recommendations");
+        } finally {
+            setLoadingRecommendations(false);
         }
     };
 
@@ -141,8 +154,8 @@ export default function Home() {
                             onClick={() => {
                                 setSelectedMovie(movie);
                                 window.scrollTo({
-                                    top: 0, // Sayfanın en üst kısmına kaydır
-                                    behavior: "smooth", // Yumuşak kaydırma efekti
+                                    top: 0,
+                                    behavior: "smooth",
                                 });
                             }}
                         >
@@ -156,32 +169,26 @@ export default function Home() {
                     ))}
                 </div>
 
-                {recommendations.length > 0 && (
+                {recommendations && recommendations.length > 0 ? (
                     <div className="mt-6">
-                        <h2 className="text-2xl font-bold text-center text-blue-600">
-                            Recommendation Movies
-                        </h2>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
+                        <h3 className="text-lg font-bold mb-2">Recommended Movies:</h3>
+                        <ul>
                             {recommendations.map((movie, index) => (
-                                <div
-                                    key={index}
-                                    className="card shadow-md p-2 bg-base-100 cursor-pointer"
-                                >
-                                    <h3 className="text-sm font-bold">
-                                        {movie.title}
-                                    </h3>
-                                    <img
-                                        src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
-                                        alt={movie.title}
-                                        className="mt-2"
-                                    />
-                                </div>
+                                <li key={index} className="mb-2">
+                                    {movie.title} - {movie.genres}
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                     </div>
+                ) : error ? (
+                    <div className="text-red-500 mt-4">{error}</div>
+                ) : null}
+
+                {loadingRecommendations && (
+                    <div className="text-center mt-4">Loading recommendations...</div>
                 )}
 
-                {watchedMovies.length >= 10 && (
+                {watchedMovies.length >= 10 && !loadingRecommendations && (
                     <button
                         className="w-full bg-blue-500 text-white py-2 px-4 rounded mt-4 hover:bg-blue-700"
                         onClick={handleSuggestMovies}
