@@ -116,7 +116,7 @@ export default function MoviesWatchedList({ watchedMovies, onRemove }: MoviesWat
                     )}
 
                     {/* Öneriler Listesi */}
-                    {recommendations.length > 0 && (
+                    {recommendations && recommendations.length > 0 && (
                         <div className="mt-6">
                             <h3 className="text-lg font-bold mb-2 text-accent-dark">Recommended Movies:</h3>
                             <ul>

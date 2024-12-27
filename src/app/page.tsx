@@ -8,21 +8,30 @@ import StarRating from "./components/StarRating"; // Yıldız ile puanlama bile�
 
 // Film verilerini tanımlayan bir TypeScript arayüzü
 interface Movie {
-    id: number; // Filmin benzersiz kimliği
-    title: string; // Filmin başlığı
-    poster_path: string; // Film posterinin yolu
-    release_date: string; // Filmin yayınlanma tarihi
-    adult: boolean; // Filmin yetişkinlere uygun olup olmadığını belirtir
-    overview: string; // Filmin açıklaması
-    vote_average: number; // Filmin kullanıcı puan ortalaması
-    vote_count: number; // Filme yapılan toplam oy sayısı
-    genre_ids: number[]; // Filmin türlerinin ID'leri
+    id: number;
+    title: string;
+    poster_path: string;
+    release_date: string;
+    adult: boolean;
+    overview: string;
+    vote_average: number;
+    vote_count: number;
+    genre_ids: number[];
 }
 
-// Önerilen filmleri tanımlayan bir arayüz
+// Önerilen Filmleri tanımlayan bir arayüz
+// <-- DEĞİŞİKLİK: poster_path, overview gibi alanlar ekliyoruz.
+// Böylece TMDB'den gelen bilgileri burada da tutabiliriz.
 interface Recommendation {
-    title: string; // Filmin başlığı
-    genres: string; // Filmin tür bilgisi
+    movieId: number;
+    tmdbId: number;
+    title: string;
+    genres: string;
+    poster_path?: string;    // TMDB'den çekilecek
+    release_date?: string;   // TMDB'den çekilecek
+    overview?: string;       // TMDB'den çekilecek
+    vote_average?: number;   // TMDB'den çekilecek
+    // vs. eklemek istediğin diğer alanlar
 }
 
 // İzlenen filmlere ek olarak kullanıcı puanı içeren bir arayüz
@@ -32,15 +41,15 @@ interface WatchedMovie extends Movie {
 
 // Home bileşeni, uygulamanın ana ekranı
 export default function Home() {
-    const [favorites, setFavorites] = useState<Movie[]>([]); // Favori filmleri tutan state
-    const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>([]); // İzlenen filmleri tutan state
-    const [popularMovies, setPopularMovies] = useState<Movie[]>([]); // Popüler filmleri tutan state
-    const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null); // Kullanıcının seçtiği film
-    const [recommendations, setRecommendations] = useState<Recommendation[]>([]); // Önerilen filmleri tutan state
-    const [loadingRecommendations, setLoadingRecommendations] = useState(false); // Önerilerin yüklenip yüklenmediğini tutar
-    const [error, setError] = useState<string | null>(null); // Hata mesajını tutar
-    const [page, setPage] = useState(1); // Şu anki sayfa numarası
-    const [hasMore, setHasMore] = useState(true); // Daha fazla film olup olmadığını kontrol eder
+    const [favorites, setFavorites] = useState<Movie[]>([]);
+    const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>([]);
+    const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
+    const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+    const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+    const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
 
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY; // TMDB API anahtarı
 
@@ -79,23 +88,64 @@ export default function Home() {
                     setPage((prevPage) => prevPage + 1); // Yeni sayfa yükle
                 }
             },
-            { threshold: 1.0 } // Eleman %100 görünür olduğunda tetiklenir
+            { threshold: 1.0 }
         );
 
-        const sentinel = document.getElementById("scroll-sentinel"); // Gözlemlenecek öğe
+        const sentinel = document.getElementById("scroll-sentinel");
         if (sentinel) {
-            observer.observe(sentinel); // Gözlemlemeyi başlat
+            observer.observe(sentinel);
         }
 
         return () => {
-            if (sentinel) observer.unobserve(sentinel); // Temizlik işlemi
+            if (sentinel) observer.unobserve(sentinel);
         };
     }, [hasMore]);
 
+    // <-- DEĞİŞİKLİK:
+    // TMDB'den film detaylarını çeken yardımcı fonksiyon
+    // recommendations listesindeki her bir movie.tmdbId'yi kullanarak
+    // poster_path gibi bilgileri çekiyoruz.
+    async function enrichRecommendationsWithTmdbData(recs: Recommendation[]) {
+        const enriched: Recommendation[] = [];
+
+        for (const r of recs) {
+            // tmdbId yoksa direkt listeye ekle
+            if (!r.tmdbId || !apiKey) {
+                enriched.push(r);
+                continue;
+            }
+            try {
+                const tmdbRes = await fetch(
+                    `https://api.themoviedb.org/3/movie/${r.tmdbId}?api_key=${apiKey}`
+                );
+                if (!tmdbRes.ok) {
+                    // Hata varsa basitçe ekle
+                    enriched.push(r);
+                    continue;
+                }
+                const tmdbData = await tmdbRes.json();
+                // POSTER, OVERVIEW vb. bilgileri ekle
+                enriched.push({
+                    ...r,
+                    poster_path: tmdbData.poster_path,
+                    release_date: tmdbData.release_date,
+                    overview: tmdbData.overview,
+                    vote_average: tmdbData.vote_average,
+                });
+            } catch (error) {
+                console.error("Error fetching TMDB details:", error);
+                // Hata alırsak yine de ekle
+                enriched.push(r);
+            }
+        }
+
+        return enriched;
+    }
+
     // Flask API'ye öneriler için istek gönderen bir fonksiyon
     const handleSuggestMovies = async () => {
-        setLoadingRecommendations(true); // Öneriler yükleniyor olarak işaretle
-        setError(null); // Hata mesajını sıfırla
+        setLoadingRecommendations(true);
+        setError(null);
 
         // İzlenen en yüksek puanlı 10 filmi seç
         const selectedMovies = watchedMovies
@@ -116,18 +166,24 @@ export default function Home() {
             });
 
             if (response.ok) {
-                const data = await response.json();
-                setRecommendations(data || []); // Önerileri kaydet
-                setPopularMovies([]); // Popüler filmleri temizle
+                const data: Recommendation[] = await response.json();
+
+                // <-- DEĞİŞİKLİK:
+                // 1) Flask'ten dönen data => [{ movieId, tmdbId, title, ... }]
+                // 2) Bu listedeki her film için TMDB verisini zenginleştir
+                const enriched = await enrichRecommendationsWithTmdbData(data);
+
+                setRecommendations(enriched); // Zenginleştirilmiş önerileri state'e at
+                setPopularMovies([]);
             } else {
-                setError("Failed to fetch recommendations"); // Hata mesajı ayarla
-                setRecommendations([]); // Önerileri sıfırla
+                setError("Failed to fetch recommendations");
+                setRecommendations([]);
             }
         } catch (error) {
             console.error("Error fetching recommendations:", error);
             setError("Error fetching recommendations");
         } finally {
-            setLoadingRecommendations(false); // Yükleme durumunu sıfırla
+            setLoadingRecommendations(false);
         }
     };
 
@@ -240,25 +296,53 @@ export default function Home() {
 
                 {/* Öneri listesi */}
                 {recommendations && recommendations.length > 0 ? (
+                    // <-- DEĞİŞİKLİK: Önerileri poster vs. ile göstermek
                     <div className="mt-6">
-                        <h3 className="text-lg font-bold mb-2 text-accent-dark">Recommended Movies:</h3>
-                        <ul>
+                        <h3 className="text-lg font-bold mb-2 text-accent-dark">
+                            Recommended Movies:
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mt-6">
                             {recommendations.map((movie, index) => (
-                                <li key={index} className="mb-2 text-accent">
-                                    {movie.title} - {movie.genres}
-                                </li>
+                                <div
+                                    key={index}
+                                    className="card shadow-md p-2 bg-primary-light"
+                                >
+                                    <h4 className="text-sm font-bold text-accent-dark mb-1">
+                                        {movie.title}
+                                    </h4>
+                                    {movie.poster_path && (
+                                        <img
+                                            src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
+                                            alt={movie.title}
+                                            className="rounded-lg border border-primary"
+                                        />
+                                    )}
+                                    <p className="text-xs text-accent">
+                                        {movie.genres}
+                                    </p>
+                                    {/* overview varsa küçük bir özet */}
+                                    {movie.overview && (
+                                        <p className="text-xs text-accent mt-2">
+                                            {movie.overview.slice(0, 80)}...
+                                        </p>
+                                    )}
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     </div>
                 ) : error ? (
                     <div className="text-accent-dark mt-4">{error}</div>
                 ) : (
-                    <p className="text-center mt-4 text-accent">No recommendations available.</p>
+                    <p className="text-center mt-4 text-accent">
+                        No recommendations available.
+                    </p>
                 )}
 
                 {/* Yükleme durumu */}
                 {loadingRecommendations && (
-                    <div className="text-center mt-4 text-accent">Loading recommendations...</div>
+                    <div className="text-center mt-4 text-accent">
+                        Loading recommendations...
+                    </div>
                 )}
 
                 {/* Öneri butonu */}
