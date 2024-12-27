@@ -148,14 +148,15 @@ export default function Home() {
             />
 
             <div className="flex-1 p-10">
-                <h1 className="text-4xl font-bold text-blue-600 mb-6 text-center">
-                    Welcome to MovieMatchHub
+                <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-accent-dark to-primary-light text-center">
+                    MovieRecommendationHive
                 </h1>
 
-                <SearchBar onMovieSelect={setSelectedMovie} />
+                <SearchBar onMovieSelect={setSelectedMovie}/>
 
                 {selectedMovie && (
-                    <div className="relative mt-6 p-4 border border-gray-700 rounded shadow-md text-center bg-black bg-opacity-75">
+                    <div
+                        className="relative mt-6 p-4 border border-gray-700 rounded shadow-md text-center bg-black bg-opacity-75">
                         <button
                             className="absolute top-4 right-4 text-white bg-purple-700 rounded-full p-3 hover:bg-purple-900 hover:scale-110 transition transform duration-200 ease-in-out shadow-lg"
                             onClick={() => setSelectedMovie(null)}

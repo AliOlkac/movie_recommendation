@@ -37,6 +37,8 @@ export default function SearchBar({ onMovieSelect }: SearchBarProps) {
         return () => clearTimeout(delayDebounceFn); // Eski timeout'u temizler
     }, [searchTerm, apiKey]);
 
+
+
     return (
         <div className="flex flex-col items-center relative">
             {/* Arama Kutusu */}
@@ -45,8 +47,9 @@ export default function SearchBar({ onMovieSelect }: SearchBarProps) {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search for a movie..."
-                className="input input-bordered w-full max-w-xs mb-4"
+                className="w-full max-w-xs p-4 border-2 border-primary-light rounded-full bg-primary-lighter text-accent-dark placeholder-accent focus:outline-none focus:ring-4 focus:ring-primary shadow-lg transition duration-300 ease-in-out"
             />
+
 
             {/* Öneri Listesi */}
             {searchResults.length > 0 && (
