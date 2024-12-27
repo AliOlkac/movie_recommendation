@@ -1,46 +1,50 @@
-"use client";
+"use client"; // Bu dosyanın client-side render için kullanılacağını belirtiyor
 
-import { useEffect, useState } from "react";
-import SearchBar from "./components/SearchBar";
-import FavoritesList from "./components/FavoritesList";
-import MoviesWatchedList from "./components/MoviesWatchedList";
-import StarRating from "./components/StarRating";
+import { useEffect, useState } from "react"; // React'ten gerekli hook'lar import ediliyor
+import SearchBar from "./components/SearchBar"; // Arama bileşeni
+import FavoritesList from "./components/FavoritesList"; // Favori filmler bileşeni
+import MoviesWatchedList from "./components/MoviesWatchedList"; // İzlenen filmler bileşeni
+import StarRating from "./components/StarRating"; // Yıldız ile puanlama bileşeni
 
+// Film verilerini tanımlayan bir TypeScript arayüzü
 interface Movie {
     id: number; // Filmin benzersiz kimliği
-    title: string; // Filmin adı
-    poster_path: string; // Poster görüntüsü yolu
-    release_date: string; // Filmin yayınlanma tarihi (YYYY-MM-DD formatında)
-    adult: boolean; // Yetişkin içerik olup olmadığını belirler
+    title: string; // Filmin başlığı
+    poster_path: string; // Film posterinin yolu
+    release_date: string; // Filmin yayınlanma tarihi
+    adult: boolean; // Filmin yetişkinlere uygun olup olmadığını belirtir
     overview: string; // Filmin açıklaması
-    vote_average: number; // Filmin puan ortalaması
-    vote_count: number; // Oy sayısı
-    genre_ids: number[]; // Türlerin ID'leri
+    vote_average: number; // Filmin kullanıcı puan ortalaması
+    vote_count: number; // Filme yapılan toplam oy sayısı
+    genre_ids: number[]; // Filmin türlerinin ID'leri
 }
 
+// Önerilen filmleri tanımlayan bir arayüz
 interface Recommendation {
-    title: string;
-    genres: string; // Flask API'den gelen tür bilgisi
+    title: string; // Filmin başlığı
+    genres: string; // Filmin tür bilgisi
 }
 
+// İzlenen filmlere ek olarak kullanıcı puanı içeren bir arayüz
 interface WatchedMovie extends Movie {
-    rating: number;
+    rating: number; // Kullanıcının filme verdiği puan
 }
 
+// Home bileşeni, uygulamanın ana ekranı
 export default function Home() {
-    const [favorites, setFavorites] = useState<Movie[]>([]); // Favori filmler
-    const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>([]); // İzlenen filmler
-    const [popularMovies, setPopularMovies] = useState<Movie[]>([]); // Popüler filmler
-    const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null); // Seçilen film
-    const [recommendations, setRecommendations] = useState<Recommendation[]>([]); // Önerilen filmler
-    const [loadingRecommendations, setLoadingRecommendations] = useState(false); // Öneri yükleniyor mu
-    const [error, setError] = useState<string | null>(null); // Hata mesajı
-    const [page, setPage] = useState(1); // Şu anki sayfa
-    const [hasMore, setHasMore] = useState(true); // Daha fazla veri var mı
+    const [favorites, setFavorites] = useState<Movie[]>([]); // Favori filmleri tutan state
+    const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>([]); // İzlenen filmleri tutan state
+    const [popularMovies, setPopularMovies] = useState<Movie[]>([]); // Popüler filmleri tutan state
+    const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null); // Kullanıcının seçtiği film
+    const [recommendations, setRecommendations] = useState<Recommendation[]>([]); // Önerilen filmleri tutan state
+    const [loadingRecommendations, setLoadingRecommendations] = useState(false); // Önerilerin yüklenip yüklenmediğini tutar
+    const [error, setError] = useState<string | null>(null); // Hata mesajını tutar
+    const [page, setPage] = useState(1); // Şu anki sayfa numarası
+    const [hasMore, setHasMore] = useState(true); // Daha fazla film olup olmadığını kontrol eder
 
-    const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY; // TMDB API anahtarı
 
-    // Popüler filmleri belirtilen sayfaya göre getirir
+    // TMDB API'den popüler filmleri çeken bir fonksiyon
     const fetchMovies = async (currentPage: number) => {
         try {
             const response = await fetch(
@@ -49,27 +53,25 @@ export default function Home() {
             const data = await response.json();
 
             if (data.results && data.results.length > 0) {
-                // Yetişkin içerikli olmayan filmleri filtrele
+                // Yetişkin içerikli filmleri filtrele
                 const filteredMovies = data.results.filter((movie: Movie) => !movie.adult);
 
+                // Yeni filmleri mevcut listeye ekle
                 setPopularMovies((prevMovies) => [...prevMovies, ...filteredMovies]);
             } else {
-                setHasMore(false); // Daha fazla film yok
+                setHasMore(false); // Daha fazla film olmadığını belirt
             }
         } catch (error) {
             console.error("Error fetching movies:", error);
         }
     };
 
-
-
-
-    // İlk yüklemede ve sayfa değiştikçe yeni filmleri getirir
+    // İlk yüklemede ve her sayfa değişiminde yeni filmleri getir
     useEffect(() => {
         fetchMovies(page);
     }, [page]);
 
-    // Sonsuz kaydırma için Intersection Observer
+    // Sonsuz kaydırma (infinite scroll) için Intersection Observer
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
@@ -77,12 +79,12 @@ export default function Home() {
                     setPage((prevPage) => prevPage + 1); // Yeni sayfa yükle
                 }
             },
-            { threshold: 1.0 } // %100 görünür olduğunda tetiklenir
+            { threshold: 1.0 } // Eleman %100 görünür olduğunda tetiklenir
         );
 
         const sentinel = document.getElementById("scroll-sentinel"); // Gözlemlenecek öğe
         if (sentinel) {
-            observer.observe(sentinel);
+            observer.observe(sentinel); // Gözlemlemeyi başlat
         }
 
         return () => {
@@ -90,18 +92,17 @@ export default function Home() {
         };
     }, [hasMore]);
 
-
-
-
+    // Flask API'ye öneriler için istek gönderen bir fonksiyon
     const handleSuggestMovies = async () => {
-        setLoadingRecommendations(true);
-        setError(null);
+        setLoadingRecommendations(true); // Öneriler yükleniyor olarak işaretle
+        setError(null); // Hata mesajını sıfırla
 
-        // Kullanıcının izlediği en yüksek puanlı 10 filmi seç
+        // İzlenen en yüksek puanlı 10 filmi seç
         const selectedMovies = watchedMovies
             .sort((a, b) => b.rating - a.rating)
             .slice(0, 10);
 
+        // Kullanıcı puanlarını JSON formatına dönüştür
         const userRatings = selectedMovies.reduce<Record<string, number>>((acc, movie) => {
             acc[movie.title] = movie.rating;
             return acc;
@@ -116,40 +117,42 @@ export default function Home() {
 
             if (response.ok) {
                 const data = await response.json();
-                setRecommendations(data || []);
-                setPopularMovies([]);
+                setRecommendations(data || []); // Önerileri kaydet
+                setPopularMovies([]); // Popüler filmleri temizle
             } else {
-                setError("Failed to fetch recommendations");
-                setRecommendations([]);
+                setError("Failed to fetch recommendations"); // Hata mesajı ayarla
+                setRecommendations([]); // Önerileri sıfırla
             }
         } catch (error) {
             console.error("Error fetching recommendations:", error);
             setError("Error fetching recommendations");
         } finally {
-            setLoadingRecommendations(false);
+            setLoadingRecommendations(false); // Yükleme durumunu sıfırla
         }
     };
 
     return (
         <div className="flex">
+            {/* Sol panel: Favoriler ve İzlenen Filmler */}
             <div className="flex-1 p-10">
-
                 <div className="flex-1 p-10 text-center">
                     <img
                         src="/NextFilmsLogo_1.png"
                         alt="MovieRecommendationHive Logo"
                         className="mx-auto"
-                        style={{width: "400px", height: "auto", scale: 1.5}}
+                        style={{ width: "400px", height: "auto", scale: 1.5 }}
                     />
-
                 </div>
 
+                {/* Favori filmleri listele */}
                 <FavoritesList
                     favorites={favorites}
                     onRemove={(movie) =>
                         setFavorites(favorites.filter((fav) => fav.id !== movie.id))
                     }
                 />
+
+                {/* İzlenen filmleri listele */}
                 <MoviesWatchedList
                     watchedMovies={watchedMovies}
                     onRemove={(movie) =>
@@ -159,12 +162,15 @@ export default function Home() {
                     }
                 />
 
+                {/* Arama çubuğu */}
+                <SearchBar onMovieSelect={setSelectedMovie} />
 
-                <SearchBar onMovieSelect={setSelectedMovie}/>
-
+                {/* Seçilen film için modal */}
                 {selectedMovie && (
                     <div
-                        className="relative mt-6 p-4 border border-primary-dark rounded shadow-md text-center bg-primary-light bg-opacity-90">
+                        className="relative mt-6 p-4 border border-primary-dark rounded shadow-md text-center bg-primary-light bg-opacity-90"
+                        id="rating-section"
+                    >
                         <button
                             className="absolute top-4 right-4 text-white bg-accent-dark rounded-full p-3 hover:bg-accent transition transform duration-200 ease-in-out shadow-lg"
                             onClick={() => setSelectedMovie(null)}
@@ -184,7 +190,7 @@ export default function Home() {
                                 onRate={(rating) => {
                                     setWatchedMovies([
                                         ...watchedMovies,
-                                        {...selectedMovie, rating},
+                                        { ...selectedMovie, rating },
                                     ]);
                                     setSelectedMovie(null);
                                 }}
@@ -192,9 +198,10 @@ export default function Home() {
                         </div>
                         <div className="mt-4">
                             <button
-                                onClick={() =>
-                                    setFavorites([...favorites, selectedMovie])
-                                }
+                                onClick={() => {
+                                    setFavorites([...favorites, selectedMovie]);
+                                    setSelectedMovie(null);
+                                }}
                                 className="btn bg-accent text-white border border-accent-dark hover:bg-accent-dark transition"
                             >
                                 ❤ Add to Favorites
@@ -203,6 +210,7 @@ export default function Home() {
                     </div>
                 )}
 
+                {/* Popüler filmleri listele */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mt-6">
                     {popularMovies.map((movie) => (
                         <div
@@ -210,10 +218,13 @@ export default function Home() {
                             className="card shadow-md p-2 bg-primary-light cursor-pointer hover:shadow-lg transition"
                             onClick={() => {
                                 setSelectedMovie(movie);
-                                window.scrollTo({
-                                    top: 0,
-                                    behavior: "smooth",
-                                });
+                                const ratingSection = document.getElementById("rating-section");
+                                if (ratingSection) {
+                                    ratingSection.scrollIntoView({
+                                        behavior: "smooth",
+                                        block: "center",
+                                    });
+                                }
                             }}
                         >
                             <h3 className="text-sm font-bold text-accent-dark">{movie.title}</h3>
@@ -225,9 +236,9 @@ export default function Home() {
                         </div>
                     ))}
                     <div id="scroll-sentinel" className="h-10"></div>
-                    {/* Sonsuz kaydırma için sentinel */}
                 </div>
 
+                {/* Öneri listesi */}
                 {recommendations && recommendations.length > 0 ? (
                     <div className="mt-6">
                         <h3 className="text-lg font-bold mb-2 text-accent-dark">Recommended Movies:</h3>
@@ -245,10 +256,12 @@ export default function Home() {
                     <p className="text-center mt-4 text-accent">No recommendations available.</p>
                 )}
 
+                {/* Yükleme durumu */}
                 {loadingRecommendations && (
                     <div className="text-center mt-4 text-accent">Loading recommendations...</div>
                 )}
 
+                {/* Öneri butonu */}
                 {watchedMovies.length >= 10 && !loadingRecommendations && (
                     <button
                         className="w-full bg-primary text-white py-2 px-4 rounded mt-4 hover:bg-primary-dark transition"
@@ -258,7 +271,6 @@ export default function Home() {
                     </button>
                 )}
             </div>
-
         </div>
     );
 }
