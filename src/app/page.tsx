@@ -148,7 +148,7 @@ export default function Home() {
             />
 
             <div className="flex-1 p-10">
-                <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-accent-dark to-primary-light text-center">
+                <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary-dark to-primary-light text-center">
                     MovieRecommendationHive
                 </h1>
 
@@ -156,9 +156,9 @@ export default function Home() {
 
                 {selectedMovie && (
                     <div
-                        className="relative mt-6 p-4 border border-gray-700 rounded shadow-md text-center bg-black bg-opacity-75">
+                        className="relative mt-6 p-4 border border-primary-dark rounded shadow-md text-center bg-primary-light bg-opacity-90">
                         <button
-                            className="absolute top-4 right-4 text-white bg-purple-700 rounded-full p-3 hover:bg-purple-900 hover:scale-110 transition transform duration-200 ease-in-out shadow-lg"
+                            className="absolute top-4 right-4 text-white bg-accent-dark rounded-full p-3 hover:bg-accent transition transform duration-200 ease-in-out shadow-lg"
                             onClick={() => setSelectedMovie(null)}
                         >
                             ✕
@@ -166,9 +166,9 @@ export default function Home() {
                         <img
                             src={`https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`}
                             alt={selectedMovie.title}
-                            className="mx-auto"
+                            className="mx-auto rounded-lg border border-primary"
                         />
-                        <h3 className="text-lg font-bold mt-2 text-white">
+                        <h3 className="text-lg font-bold mt-2 text-accent-dark">
                             {selectedMovie.title}
                         </h3>
                         <div className="flex justify-center mt-2">
@@ -176,7 +176,7 @@ export default function Home() {
                                 onRate={(rating) => {
                                     setWatchedMovies([
                                         ...watchedMovies,
-                                        { ...selectedMovie, rating },
+                                        {...selectedMovie, rating},
                                     ]);
                                     setSelectedMovie(null);
                                 }}
@@ -187,7 +187,7 @@ export default function Home() {
                                 onClick={() =>
                                     setFavorites([...favorites, selectedMovie])
                                 }
-                                className="btn bg-white text-black border border-gray-300 hover:bg-gray-100"
+                                className="btn bg-accent text-white border border-accent-dark hover:bg-accent-dark transition"
                             >
                                 ❤ Add to Favorites
                             </button>
@@ -199,7 +199,7 @@ export default function Home() {
                     {popularMovies.map((movie) => (
                         <div
                             key={movie.id}
-                            className="card shadow-md p-2 bg-base-100 cursor-pointer"
+                            className="card shadow-md p-2 bg-primary-light cursor-pointer hover:shadow-lg transition"
                             onClick={() => {
                                 setSelectedMovie(movie);
                                 window.scrollTo({
@@ -208,47 +208,49 @@ export default function Home() {
                                 });
                             }}
                         >
-                            <h3 className="text-sm font-bold">{movie.title}</h3>
+                            <h3 className="text-sm font-bold text-accent-dark">{movie.title}</h3>
                             <img
                                 src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                                 alt={movie.title}
-                                className="mt-2"
+                                className="mt-2 rounded-lg border border-primary"
                             />
                         </div>
                     ))}
-                    <div id="scroll-sentinel" className="h-10"></div> {/* Sonsuz kaydırma için sentinel */}
+                    <div id="scroll-sentinel" className="h-10"></div>
+                    {/* Sonsuz kaydırma için sentinel */}
                 </div>
 
                 {recommendations && recommendations.length > 0 ? (
                     <div className="mt-6">
-                        <h3 className="text-lg font-bold mb-2">Recommended Movies:</h3>
+                        <h3 className="text-lg font-bold mb-2 text-accent-dark">Recommended Movies:</h3>
                         <ul>
                             {recommendations.map((movie, index) => (
-                                <li key={index} className="mb-2">
+                                <li key={index} className="mb-2 text-accent">
                                     {movie.title} - {movie.genres}
                                 </li>
                             ))}
                         </ul>
                     </div>
                 ) : error ? (
-                    <div className="text-red-500 mt-4">{error}</div>
+                    <div className="text-accent-dark mt-4">{error}</div>
                 ) : (
-                    <p className="text-center mt-4">No recommendations available.</p>
+                    <p className="text-center mt-4 text-accent">No recommendations available.</p>
                 )}
 
                 {loadingRecommendations && (
-                    <div className="text-center mt-4">Loading recommendations...</div>
+                    <div className="text-center mt-4 text-accent">Loading recommendations...</div>
                 )}
 
                 {watchedMovies.length >= 10 && !loadingRecommendations && (
                     <button
-                        className="w-full bg-blue-500 text-white py-2 px-4 rounded mt-4 hover:bg-blue-700"
+                        className="w-full bg-primary text-white py-2 px-4 rounded mt-4 hover:bg-primary-dark transition"
                         onClick={handleSuggestMovies}
                     >
                         Suggest Movies
                     </button>
                 )}
             </div>
+
         </div>
     );
 }
