@@ -4,15 +4,15 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --background-start-rgb: 242, 208, 167;
+  --background-end-rgb: 166, 110, 78;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+    --background-start-rgb: 89, 64, 54;
+    --background-end-rgb: 166, 110, 78;
   }
 }
 
@@ -40,12 +40,12 @@
 }
 
 .btn-favorite {
-  background-color: #ff0000; /* Kırmızı arka plan */
-  color: white; /* Yazı rengi beyaz */
+  background-color: var(--background-start-rgb);
+  color: var(--foreground-rgb);
 }
 
 .btn-favorite:hover {
-  background-color: #cc0000; /* Hover'da daha koyu kırmızı */
+  background-color: var(--background-end-rgb);
 }
 
 .favorites-list {
@@ -58,9 +58,9 @@
 body {
   margin: 0;
   padding: 0;
-  background-image: url('../../public/background.jpg'); /* Arka plan resminizi çağırır */
+  background-image: url('../../public/bg_1.webp'); /* Arka plan resmi */
   background-size: cover; /* Resmi tam genişliğe veya yüksekliğe sığdırır */
-  background-repeat: repeat-y; /* Yalnızca dikey olarak tekrar eder */
+  background-repeat: no-repeat; /* Tekrarı kaldırır */
   background-position: center; /* Resmi yatayda ortalar */
   background-attachment: fixed; /* Arka plan kaydırma ile hareket etmez */
   min-height: 100vh; /* Minimum ekran yüksekliği */
@@ -81,8 +81,8 @@ li {
 }
 
 li:hover {
-  background-color: #333;
-  color: #fff;
+  background-color: var(--background-end-rgb);
+  color: var(--foreground-rgb);
 }
 
 /* Arama sonuçlarını düzenleme */
@@ -91,7 +91,7 @@ ul.search-results {
   top: 60px; /* Arama kutusunun altına yerleştirme */
   left: 50%;
   transform: translateX(-50%); /* Ortalamak için */
-  background-color: rgba(0, 0, 0, 0.98); /* Opak siyah arka plan */
+  background-color: rgba(var(--background-start-rgb), 0.95); /* Opak arka plan */
   z-index: 10; /* Diğer içeriklerin üzerinde durmasını sağlar */
   border-radius: 8px;
   width: 100%;
@@ -106,12 +106,12 @@ ul.search-results li {
   display: flex;
   align-items: center;
   cursor: pointer;
-  color: white;
+  color: var(--foreground-rgb);
   transition: background-color 0.3s ease;
 }
 
 ul.search-results li:hover {
-  background-color: rgba(255, 255, 255, 0.2); /* Hover durumunda arka plan değişimi */
+  background-color: rgba(var(--background-end-rgb), 0.2); /* Hover durumunda arka plan değişimi */
 }
 
 ul.search-results img {
@@ -143,7 +143,7 @@ ul.search-results img {
   justify-content: space-between;
   align-items: center;
   margin-top: 0.8rem; /* Üst boşluk ekler */
-  margin-left: 1.5rem ;
+  margin-left: 1.5rem;
   padding-right: 0.8rem; /* Sağda düğme ile boşluk bırakır */
 }
 
@@ -173,23 +173,23 @@ ul.search-results img {
   font-size: 1rem;
   font-weight: bold;
   color: white;
-  background-color: #4caf50; /* Temanıza uygun yeşil ton */
+  background-color: var(--background-start-rgb);
   border: none;
   transition: background-color 0.3s ease, transform 0.2s ease;
   cursor: pointer;
 }
 
 .header-buttons .btn:hover {
-  background-color: #45a049; /* Hover için daha koyu yeşil ton */
+  background-color: var(--background-end-rgb);
   transform: scale(1.05); /* Hafif büyütme efekti */
 }
 
 .header-buttons .btn.sign-up {
-  background-color: #f44336; /* Temanıza uygun kırmızı ton */
+  background-color: var(--background-end-rgb);
 }
 
 .header-buttons .btn.sign-up:hover {
-  background-color: #e53935; /* Hover için daha koyu kırmızı ton */
+  background-color: var(--background-start-rgb);
 }
 
 .watched-movies-panel {
@@ -198,8 +198,8 @@ ul.search-results img {
   top: 0;
   height: 100%; /* Tam yükseklik */
   width: 20rem; /* Daha geniş bir genişlik */
-  background-color: #1e293b; /* Lacivert arka plan */
-  color: white; /* Yazı rengi beyaz */
+  background-color: rgba(var(--background-start-rgb), 0.1); /* Lacivert arka plan */
+  color: var(--foreground-rgb); /* Yazı rengi beyaz */
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3); /* Gölge efekti */
   padding: 1rem;
   overflow-y: auto; /* Kaydırılabilirlik */
@@ -215,12 +215,3 @@ ul.search-results img {
   align-items: center;
   margin-bottom: 1rem; /* Filmler arasında boşluk */
 }
-
-
-
-
-
-
-
-
-

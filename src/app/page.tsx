@@ -148,9 +148,17 @@ export default function Home() {
             />
 
             <div className="flex-1 p-10">
-                <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary-dark to-primary-light text-center">
-                    MovieRecommendationHive
-                </h1>
+
+                <div className="flex-1 p-10 text-center">
+                    <img
+                        src="/movie-recommendation-hive-logo.webp"
+                        alt="MovieRecommendationHive Logo"
+                        className="mx-auto"
+                        style={{width: "400px", height: "auto"}}
+                    />
+
+                </div>
+
 
                 <SearchBar onMovieSelect={setSelectedMovie}/>
 
