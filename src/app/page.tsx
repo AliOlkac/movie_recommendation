@@ -132,32 +132,32 @@ export default function Home() {
 
     return (
         <div className="flex">
-            <FavoritesList
-                favorites={favorites}
-                onRemove={(movie) =>
-                    setFavorites(favorites.filter((fav) => fav.id !== movie.id))
-                }
-            />
-            <MoviesWatchedList
-                watchedMovies={watchedMovies}
-                onRemove={(movie) =>
-                    setWatchedMovies(
-                        watchedMovies.filter((wm) => wm.id !== movie.id)
-                    )
-                }
-            />
-
             <div className="flex-1 p-10">
 
                 <div className="flex-1 p-10 text-center">
                     <img
-                        src="/movie-recommendation-hive-logo.webp"
+                        src="/NextFilmsLogo_1.png"
                         alt="MovieRecommendationHive Logo"
                         className="mx-auto"
-                        style={{width: "400px", height: "auto"}}
+                        style={{width: "400px", height: "auto", scale: 1.5}}
                     />
 
                 </div>
+
+                <FavoritesList
+                    favorites={favorites}
+                    onRemove={(movie) =>
+                        setFavorites(favorites.filter((fav) => fav.id !== movie.id))
+                    }
+                />
+                <MoviesWatchedList
+                    watchedMovies={watchedMovies}
+                    onRemove={(movie) =>
+                        setWatchedMovies(
+                            watchedMovies.filter((wm) => wm.id !== movie.id)
+                        )
+                    }
+                />
 
 
                 <SearchBar onMovieSelect={setSelectedMovie}/>
