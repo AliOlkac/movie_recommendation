@@ -7,9 +7,15 @@ import MoviesWatchedList from "./components/MoviesWatchedList";
 import StarRating from "./components/StarRating";
 
 interface Movie {
-    id: number;
-    title: string;
-    poster_path: string;
+    id: number; // Filmin benzersiz kimliği
+    title: string; // Filmin adı
+    poster_path: string; // Poster görüntüsü yolu
+    release_date: string; // Filmin yayınlanma tarihi (YYYY-MM-DD formatında)
+    adult: boolean; // Yetişkin içerik olup olmadığını belirler
+    overview: string; // Filmin açıklaması
+    vote_average: number; // Filmin puan ortalaması
+    vote_count: number; // Oy sayısı
+    genre_ids: number[]; // Türlerin ID'leri
 }
 
 interface Recommendation {
@@ -22,34 +28,76 @@ interface WatchedMovie extends Movie {
 }
 
 export default function Home() {
-    const [favorites, setFavorites] = useState<Movie[]>([]);
-    const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>([]);
-    const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
-    const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-    const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-    const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+    const [favorites, setFavorites] = useState<Movie[]>([]); // Favori filmler
+    const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>([]); // İzlenen filmler
+    const [popularMovies, setPopularMovies] = useState<Movie[]>([]); // Popüler filmler
+    const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null); // Seçilen film
+    const [recommendations, setRecommendations] = useState<Recommendation[]>([]); // Önerilen filmler
+    const [loadingRecommendations, setLoadingRecommendations] = useState(false); // Öneri yükleniyor mu
     const [error, setError] = useState<string | null>(null); // Hata mesajı
+    const [page, setPage] = useState(1); // Şu anki sayfa
+    const [hasMore, setHasMore] = useState(true); // Daha fazla veri var mı
+
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 
-    useEffect(() => {
-        const fetchMovies = async () => {
-            try {
-                const response = await fetch(
-                    `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}`
-                );
-                const data = await response.json();
-                setPopularMovies(data.results.slice(0, 20));
-            } catch (error) {
-                console.error("Error fetching movies:", error);
+    // Popüler filmleri belirtilen sayfaya göre getirir
+    const fetchMovies = async (currentPage: number) => {
+        try {
+            const response = await fetch(
+                `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&page=${currentPage}&vote_count.gte=3000&sort_by=vote_count.desc`
+            );
+            const data = await response.json();
+
+            if (data.results && data.results.length > 0) {
+                // Yetişkin içerikli olmayan filmleri filtrele
+                const filteredMovies = data.results.filter((movie: Movie) => !movie.adult);
+
+                setPopularMovies((prevMovies) => [...prevMovies, ...filteredMovies]);
+            } else {
+                setHasMore(false); // Daha fazla film yok
             }
+        } catch (error) {
+            console.error("Error fetching movies:", error);
+        }
+    };
+
+
+
+
+    // İlk yüklemede ve sayfa değiştikçe yeni filmleri getirir
+    useEffect(() => {
+        fetchMovies(page);
+    }, [page]);
+
+    // Sonsuz kaydırma için Intersection Observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore) {
+                    setPage((prevPage) => prevPage + 1); // Yeni sayfa yükle
+                }
+            },
+            { threshold: 1.0 } // %100 görünür olduğunda tetiklenir
+        );
+
+        const sentinel = document.getElementById("scroll-sentinel"); // Gözlemlenecek öğe
+        if (sentinel) {
+            observer.observe(sentinel);
+        }
+
+        return () => {
+            if (sentinel) observer.unobserve(sentinel); // Temizlik işlemi
         };
-        fetchMovies();
-    }, [apiKey]);
+    }, [hasMore]);
+
+
+
 
     const handleSuggestMovies = async () => {
         setLoadingRecommendations(true);
-        setError(null); // Hata durumunu sıfırla
+        setError(null);
 
+        // Kullanıcının izlediği en yüksek puanlı 10 filmi seç
         const selectedMovies = watchedMovies
             .sort((a, b) => b.rating - a.rating)
             .slice(0, 10);
@@ -167,6 +215,7 @@ export default function Home() {
                             />
                         </div>
                     ))}
+                    <div id="scroll-sentinel" className="h-10"></div> {/* Sonsuz kaydırma için sentinel */}
                 </div>
 
                 {recommendations && recommendations.length > 0 ? (
@@ -182,7 +231,9 @@ export default function Home() {
                     </div>
                 ) : error ? (
                     <div className="text-red-500 mt-4">{error}</div>
-                ) : null}
+                ) : (
+                    <p className="text-center mt-4">No recommendations available.</p>
+                )}
 
                 {loadingRecommendations && (
                     <div className="text-center mt-4">Loading recommendations...</div>
