@@ -1,129 +1,165 @@
-"use client"; // Bu dosyanın client-side render için kullanılacağını belirtiyor
+"use client"; // <-- Bu dosyanın (page.tsx) Next.js tarafında client-side render edileceğini belirtir
 
-import { useEffect, useState } from "react";
-import SearchBar from "./components/SearchBar";
-import FavoritesList from "./components/FavoritesList";
-import MoviesWatchedList from "./components/MoviesWatchedList";
-import StarRating from "./components/StarRating";
+import { useEffect, useState } from "react"; // <-- React Hook'ları import ediyoruz
+import SearchBar from "./components/SearchBar"; // <-- Arama bileşeni
+import FavoritesList from "./components/FavoritesList"; // <-- Favori film bileşeni
+import MoviesWatchedList from "./components/MoviesWatchedList"; // <-- İzlenen film bileşeni
+import StarRating from "./components/StarRating"; // <-- Yıldız puanlama bileşeni
 
-// Film verilerini tanımlayan bir TypeScript arayüzü
+// -----------------------------------------------------------------------------
+// 1) Tip (interface) tanımları
+// -----------------------------------------------------------------------------
+
+/** TMDB'den veya API'den çektiğimiz film bilgilerini temsil eden arayüz. */
 interface Movie {
-    id: number;
-    title: string;
-    poster_path: string;
-    release_date: string;
-    adult: boolean;
-    overview: string;
-    vote_average: number;
-    vote_count: number;
-    genre_ids: number[];
+    id: number;                  // Filmin benzersiz ID'si (TMDB'den gelen "id")
+    title: string;               // Filmin adı
+    poster_path: string;         // Poster için TMDB yol bilgisi (ör: "/abc.jpg")
+    release_date: string;        // Yayınlanma tarihi
+    adult: boolean;              // Yetişkin içerik mi
+    overview: string;            // Filmin açıklaması
+    vote_average: number;        // TMDB oylama ortalaması
+    vote_count: number;          // TMDB'de toplam oy sayısı
+    genre_ids: number[];         // Tür ID'leri (TMDB'den gelen)
 }
 
-// Önerilen Filmleri tanımlayan bir arayüz
-interface Recommendation {
-    movieId: number;
-    tmdbId: number;
-    title: string;
-    genres: string;
-    poster_path?: string;    // TMDB'den çekilecek
-    release_date?: string;   // TMDB'den çekilecek
-    overview?: string;       // TMDB'den çekilecek
-    vote_average?: number;   // TMDB'den çekilecek
-}
-
-// İzlenen filmlere ek olarak kullanıcı puanı içeren bir arayüz
+/** Kullanıcının izlediği filmleri (ve verdiği puanı) tutan arayüz. */
 interface WatchedMovie extends Movie {
-    rating: number; // Kullanıcının filme verdiği puan
+    rating: number; // Kullanıcının verdiği puan
 }
+
+/** Flask'tan dönen öneri formatını (enrich edilmeden önce) temsil eden arayüz. */
+interface Recommendation {
+    movieId: number;   // CSV'deki movieId (ör: 356)
+    tmdbId: number;    // TMDB'deki ID (ör: 13)
+    title: string;     // Filmin başlığı
+    genres: string;    // "Crime|Mystery|Thriller" gibi tür bilgisi
+    poster_path?: string;   // TMDB'den elde edeceğimiz poster
+    release_date?: string;  // TMDB'den elde edeceğimiz çıkış tarihi
+    overview?: string;      // TMDB'den elde edeceğimiz açıklama
+    vote_average?: number;  // TMDB'den elde edeceğimiz oy ortalaması
+}
+
+// -----------------------------------------------------------------------------
+// 2) Ana Bileşen (Home)
+// -----------------------------------------------------------------------------
 
 export default function Home() {
+    // Favori filmleri tutan state
     const [favorites, setFavorites] = useState<Movie[]>([]);
+
+    // İzlenen filmleri tutan state (içinde rating var)
     const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>([]);
+
+    // Popüler filmler ve kullanıcının seçtiği film
     const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
     const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-    // Öneriler ve yükleme-hata durumları
+    // Öneriler, yükleme durumu ve hata mesajı
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [loadingRecommendations, setLoadingRecommendations] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Sonsuz kaydırma sayfası
+    // Sonsuz kaydırma için sayfa numarası ve "daha fazla var mı" bilgisi
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
-    // TMDB API key
+    // .env.local (veya benzeri) dosyadan gelen TMDB API anahtarı
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 
-    // =======================================
-    // 1) Popüler filmleri çekmek
-    // =======================================
-    const fetchMovies = async (currentPage: number) => {
+    // ---------------------------------------------------------------------------
+    // 3) Popüler filmleri TMDB'den çekme fonksiyonu
+    // ---------------------------------------------------------------------------
+    async function fetchMovies(currentPage: number) {
         try {
+            // TMDB endpoint: Çok oy almış filmleri çekmek için parametreler
             const response = await fetch(
                 `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&page=${currentPage}&vote_count.gte=3000&sort_by=vote_count.desc`
             );
+
+            // JSON olarak parse
             const data = await response.json();
 
+            // Eğer results varsa ve en az 1 film içeriyorsa
             if (data.results && data.results.length > 0) {
-                // Yetişkin içerikli filmleri filtrele
-                const filteredMovies = data.results.filter((movie: Movie) => !movie.adult);
-                // Yeni filmleri mevcut listeye ekle
+                // Yetişkin içerikli filmleri filtreliyoruz
+                const filteredMovies = data.results.filter((m: Movie) => !m.adult);
+
+                // Mevcut popüler filmlerin sonuna ekliyoruz
                 setPopularMovies((prev) => [...prev, ...filteredMovies]);
             } else {
+                // Artık daha fazla film yok
                 setHasMore(false);
             }
         } catch (err) {
-            console.error("Error fetching movies:", err);
+            console.error("Error fetching movies:", err); // Hata varsa log
         }
-    };
+    }
 
-    // Sayfa veya bileşen ilk yüklendiğinde popüler filmleri getir
+    // useEffect: Bileşen ilk yüklendiğinde veya "page" değiştiğinde popüler filmleri getir
     useEffect(() => {
         fetchMovies(page);
     }, [page]);
 
-    // Sonsuz kaydırma (infinite scroll)
+    // ---------------------------------------------------------------------------
+    // 4) Sonsuz kaydırma mantığı (Intersection Observer)
+    // ---------------------------------------------------------------------------
     useEffect(() => {
+        // IntersectionObserver ile belirli bir sentinel elemana ulaşıldığında sayfa numarasını artır
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting && hasMore) {
-                    setPage((prevPage) => prevPage + 1);
+                    // Görünürse bir sonraki sayfayı yükle
+                    setPage((prev) => prev + 1);
                 }
             },
-            { threshold: 1.0 }
+            { threshold: 1.0 } // Eleman %100 görünür olunca tetikle
         );
 
+        // "scroll-sentinel" id'li elemanı bul
         const sentinel = document.getElementById("scroll-sentinel");
-        if (sentinel) {
-            observer.observe(sentinel);
-        }
+        // sentinel varsa observer başlatalım
+        if (sentinel) observer.observe(sentinel);
 
+        // Temizlik: bileşen kapatılırken observer'ı devre dışı bırak
         return () => {
             if (sentinel) observer.unobserve(sentinel);
         };
     }, [hasMore]);
 
-    // =======================================
-    // 2) TMDB’den film detaylarını çekmek
-    // =======================================
+    // ---------------------------------------------------------------------------
+    // 5) Flask’tan gelen önerileri TMDB verileriyle zenginleştirme fonksiyonu
+    // ---------------------------------------------------------------------------
     async function enrichRecommendationsWithTmdbData(recs: Recommendation[]) {
+        // Yeni bir dizi oluşturarak "poster_path" vb. ekliyoruz
         const enriched: Recommendation[] = [];
 
+        // API key yoksa direkt gelen "recs" döndür
+        if (!apiKey) return recs;
+
+        // Her bir öneri için döngü
         for (const r of recs) {
-            if (!r.tmdbId || !apiKey) {
-                // tmdbId yoksa direkt ekle
+            // Eğer tmdbId yoksa poster ekleyemeyiz, olduğu gibi ekle
+            if (!r.tmdbId) {
                 enriched.push(r);
                 continue;
             }
             try {
+                // TMDB detay endpoint'i: /movie/{tmdbId}
                 const tmdbRes = await fetch(
                     `https://api.themoviedb.org/3/movie/${r.tmdbId}?api_key=${apiKey}`
                 );
+
+                // Yanıt başarılı değilse orijinal datayı ekle
                 if (!tmdbRes.ok) {
                     enriched.push(r);
                     continue;
                 }
+
+                // JSON parse
                 const tmdbData = await tmdbRes.json();
+
+                // Orijinal "r" objesinin üstüne poster_path, overview vb. ekliyoruz
                 enriched.push({
                     ...r,
                     poster_path: tmdbData.poster_path,
@@ -132,6 +168,7 @@ export default function Home() {
                     vote_average: tmdbData.vote_average,
                 });
             } catch (error) {
+                // Hata varsa yine de orijinal "r" ekle
                 console.error("Error fetching TMDB details:", error);
                 enriched.push(r);
             }
@@ -140,97 +177,105 @@ export default function Home() {
         return enriched;
     }
 
-    // =======================================
-    // 3) Flask API'ye öneriler için istek gönderme
-    // =======================================
+    // ---------------------------------------------------------------------------
+    // 6) "Suggest Movies" butonuna tıklandığında Flask API'ye istek atma
+    // ---------------------------------------------------------------------------
     async function handleSuggestMovies() {
+        // Öneri yükleniyor, spinner göstermek için
         setLoadingRecommendations(true);
+        // Hata mesajını sıfırla
         setError(null);
 
         try {
-            // Kullanıcının en çok puan verdiği ilk 10 filmi alalım
-            const topRatedMovies = [...watchedMovies]
+            // İzlenen filmleri rating'e göre büyükten küçüğe sırala ve ilk 5 tanesini seç
+            const topRated = [...watchedMovies]
                 .sort((a, b) => b.rating - a.rating)
-                .slice(0, 10);
+                .slice(0, 5);
 
-            // userRatings => { "Shutter Island": 5, "Fight Club": 4, ... }
-            const userRatings: Record<string, number> = {};
-            for (const movie of topRatedMovies) {
-                userRatings[movie.title] = movie.rating;
-            }
+            // Flask'a göndereceğimiz format: { film_adi: "..", yildiz_sayi: 5 }
+            const moviesToSend = topRated.map((mov) => ({
+                film_adi: mov.title,
+                yildiz_sayi: mov.rating,
+            }));
 
-            console.log("Gönderilen userRatings:", userRatings);
+            console.log("Gönderilen JSON verisi:", { movies: moviesToSend });
 
-            // Flask'a POST isteği
+            setPopularMovies([])
+            setHasMore(false);
+
+            // Flask API'ye POST isteği
             const response = await fetch("http://127.0.0.1:5000/recommend", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_ratings: userRatings, top_n: 10 }),
+                body: JSON.stringify({ movies: moviesToSend }),
             });
 
+            // Yanıt başarılı değilse hata mesajı
             if (!response.ok) {
                 setError("Failed to fetch recommendations");
-                setLoadingRecommendations(false);
                 return;
             }
 
+            // JSON'u parse
             const data = await response.json();
             console.log("Flask'tan gelen öneriler:", data);
 
-            // data => [
-            //   { movieId: 50, tmdbId: 629, title: "...", genres: "..." },
-            //   ...
-            // ]
-
-            // TMDB'den poster gibi detayları çekelim
+            // (data) => [{ movieId, tmdbId, title, genres }, ...] bekliyoruz
+            // TMDB'den poster vb. eklemek için enrich fonksiyonunu çağırıyoruz
             const enriched = await enrichRecommendationsWithTmdbData(data);
-            setRecommendations(enriched);
 
+            // Enrich edilmiş önerileri state'e at
+            setRecommendations(enriched);
         } catch (err: any) {
-            console.error("Hata:", err);
+            // Hata olması durumunda log
+            console.error("Error in handleSuggestMovies:", err);
             setError(err.message || "Error fetching recommendations");
         } finally {
+            // Yüklenme bitti
             setLoadingRecommendations(false);
-            // Popüler filmleri temizlemek istersen:
+            // İstersen popüler filmleri temizliyoruz (UI rahat olsun diye)
             setPopularMovies([]);
         }
     }
 
-    // =======================================
-    // Render
-    // =======================================
+    // ---------------------------------------------------------------------------
+    // 7) Ekrana Render Edilen Kısım
+    // ---------------------------------------------------------------------------
     return (
         <div className="flex">
+            {/* Tüm içeriği kenara yaslamak için bir wrapper */}
             <div className="flex-1 p-10">
+                {/* Logo kısmı */}
                 <div className="flex-1 p-10 text-center">
                     <img
-                        src="/NextFilmsLogo_1.png"
+                        src="/NextFilmsLogo_1.png" // Uygulama logosu
                         alt="MovieRecommendationHive Logo"
                         className="mx-auto"
                         style={{ width: "400px", height: "auto", scale: 1.5 }}
                     />
                 </div>
 
-                {/* Favori filmleri listele */}
+                {/* Favori film listesi bileşeni */}
                 <FavoritesList
-                    favorites={favorites}
+                    favorites={favorites} // Favori filmler dizisi
                     onRemove={(movie) =>
                         setFavorites((prev) => prev.filter((fav) => fav.id !== movie.id))
                     }
                 />
 
-                {/* İzlenen filmleri listele */}
+                {/* İzlenen filmler bileşeni */}
                 <MoviesWatchedList
-                    watchedMovies={watchedMovies}
+                    watchedMovies={watchedMovies} // İzlenen filmler dizisi
                     onRemove={(movie) =>
                         setWatchedMovies((prev) => prev.filter((wm) => wm.id !== movie.id))
                     }
+                    onSuggestMovies={handleSuggestMovies} // "Suggest Movies" tıklandığında bu fonksiyonu çağır
                 />
 
-                {/* Arama çubuğu */}
+                {/* Arama çubuğu bileşeni (Film seçmek için) */}
                 <SearchBar onMovieSelect={setSelectedMovie} />
 
-                {/* Seçilen film için modal */}
+                {/* Seçili filmi (popup gibi) rating vererek kaydetme ve favoriye ekleme */}
                 {selectedMovie && (
                     <div
                         className="relative mt-6 p-4 border border-primary-dark rounded shadow-md text-center bg-primary-light bg-opacity-90"
@@ -242,25 +287,31 @@ export default function Home() {
                         >
                             ✕
                         </button>
+                        {/* Poster gösterimi */}
                         <img
                             src={`https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`}
                             alt={selectedMovie.title}
                             className="mx-auto rounded-lg border border-primary"
                         />
+                        {/* Filmin başlığı */}
                         <h3 className="text-lg font-bold mt-2 text-accent-dark">
                             {selectedMovie.title}
                         </h3>
+                        {/* Yıldız puanlama bileşeni */}
                         <div className="flex justify-center mt-2">
                             <StarRating
                                 onRate={(rating) => {
+                                    // Kullanıcı puan verdiğinde watchedMovies state'ine ekle
                                     setWatchedMovies((prev) => [
                                         ...prev,
                                         { ...selectedMovie, rating },
                                     ]);
+                                    // Modal'ı kapat
                                     setSelectedMovie(null);
                                 }}
                             />
                         </div>
+                        {/* Favorilere ekleme butonu */}
                         <div className="mt-4">
                             <button
                                 onClick={() => {
@@ -275,14 +326,17 @@ export default function Home() {
                     </div>
                 )}
 
-                {/* Popüler filmleri listele */}
+                {/* Popüler filmleri listeleme alanı */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mt-6">
+                    {/* Her bir popüler film için kart */}
                     {popularMovies.map((movie) => (
                         <div
                             key={movie.id}
                             className="card shadow-md p-2 bg-primary-light cursor-pointer hover:shadow-lg transition"
                             onClick={() => {
+                                // Film seçildiğinde selectedMovie ayarla
                                 setSelectedMovie(movie);
+                                // "rating-section" öğesine otomatik kaydırma yap (smooth scroll)
                                 const ratingSection = document.getElementById("rating-section");
                                 if (ratingSection) {
                                     ratingSection.scrollIntoView({
@@ -292,9 +346,11 @@ export default function Home() {
                                 }
                             }}
                         >
+                            {/* Filmin adı */}
                             <h3 className="text-sm font-bold text-accent-dark">
                                 {movie.title}
                             </h3>
+                            {/* Filmin posteri */}
                             <img
                                 src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                                 alt={movie.title}
@@ -302,24 +358,30 @@ export default function Home() {
                             />
                         </div>
                     ))}
+                    {/* Sonsuz kaydırma için sentinel elemanı */}
                     <div id="scroll-sentinel" className="h-10"></div>
                 </div>
 
-                {/* Öneri listesi */}
+                {/* Önerilen filmleri listeleme bölümü */}
                 {recommendations && recommendations.length > 0 ? (
+                    //populer filmleri sıfırlama setPopularMovies([])
+
                     <div className="mt-6">
                         <h3 className="text-lg font-bold mb-2 text-accent-dark">
                             Recommended Movies:
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mt-6">
+
                             {recommendations.map((movie, index) => (
                                 <div
                                     key={index}
                                     className="card shadow-md p-2 bg-primary-light"
                                 >
+                                    {/* Filmin başlığı */}
                                     <h4 className="text-sm font-bold text-accent-dark mb-1">
                                         {movie.title}
                                     </h4>
+                                    {/* Poster (enrichRecommendationsWithTmdbData'dan gelmiş) */}
                                     {movie.poster_path && (
                                         <img
                                             src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
@@ -327,9 +389,9 @@ export default function Home() {
                                             className="rounded-lg border border-primary"
                                         />
                                     )}
-                                    <p className="text-xs text-accent">
-                                        {movie.genres}
-                                    </p>
+                                    {/* Flask'tan gelen genres alanı */}
+                                    <p className="text-xs text-accent">{movie.genres}</p>
+                                    {/* Filmin overview'ünün ilk 80 karakteri */}
                                     {movie.overview && (
                                         <p className="text-xs text-accent mt-2">
                                             {movie.overview.slice(0, 80)}...
@@ -340,28 +402,20 @@ export default function Home() {
                         </div>
                     </div>
                 ) : error ? (
+                    // Eğer hata varsa hata mesajını göster
                     <div className="text-accent-dark mt-4">{error}</div>
                 ) : (
+                    // Eğer henüz öneri yoksa
                     <p className="text-center mt-4 text-accent">
                         No recommendations available.
                     </p>
                 )}
 
-                {/* Yükleme durumu */}
+                {/* Yükleme durumu (öneriler gelene kadar "Loading..." metni) */}
                 {loadingRecommendations && (
                     <div className="text-center mt-4 text-accent">
                         Loading recommendations...
                     </div>
-                )}
-
-                {/* Öneri butonu */}
-                {watchedMovies.length >= 10 && !loadingRecommendations && (
-                    <button
-                        className="w-full bg-primary text-white py-2 px-4 rounded mt-4 hover:bg-primary-dark transition"
-                        onClick={handleSuggestMovies}
-                    >
-                        Suggest Movies
-                    </button>
                 )}
             </div>
         </div>
