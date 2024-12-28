@@ -26,6 +26,7 @@ interface Movie {
 /** Kullanıcının izlediği filmleri (ve verdiği puanı) tutan arayüz. */
 interface WatchedMovie extends Movie {
     rating: number; // Kullanıcının verdiği puan
+
 }
 
 /** Flask'tan dönen öneri formatını (enrich edilmeden önce) temsil eden arayüz. */
@@ -196,6 +197,7 @@ export default function Home() {
             const moviesToSend = topRated.map((mov) => ({
                 film_adi: mov.title,
                 yildiz_sayi: mov.rating,
+                tmdb_id: mov.id,
             }));
 
             console.log("Gönderilen JSON verisi:", { movies: moviesToSend });
