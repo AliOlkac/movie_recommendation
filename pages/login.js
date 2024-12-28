@@ -4,11 +4,12 @@ import Link from 'next/link'; // Link bileşenini ekleyin
 import Image from 'next/image'; // Görsel için import
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [message, setMessage] = useState('');
-    const router = useRouter();
+    const [email, setEmail] = useState(''); // Kullanıcıdan alınacak email
+    const [password, setPassword] = useState(''); // Kullanıcıdan alınacak şifre
+    const [message, setMessage] = useState(''); // Hata veya başarı mesajı
+    const router = useRouter(); // Yönlendirme için Next.js Router kullanımı
 
+    // Form gönderildiğinde çağrılan işlev
     async function handleSubmit(e) {
         e.preventDefault();
 
@@ -35,99 +36,94 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="bg-base-200 min-h-screen flex items-center justify-center">
-            <div className="card lg:card-side bg-base-100 shadow-xl max-w-4xl w-full">
-                <figure className="lg:w-1/2">
-                    <Image
-                        src="https://picsum.photos/seed/login/800/600"
-                        alt="Random image"
-                        width={800}
-                        height={600}
-                        className="object-cover w-full h-full"
-                    />
-                </figure>
-                <div className="card-body lg:w-1/2">
-                    <h2 className="card-title text-2xl font-bold mb-6">Login</h2>
-                    <form onSubmit={handleSubmit}>
-                        {/* Email Input */}
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text">Email</span>
-                            </label>
-                            <div className="relative">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 16 16"
-                                        fill="currentColor"
-                                        className="w-5 h-5"
-                                    >
-                                        <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z" />
-                                        <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z" />
-                                    </svg>
-                                </span>
-                                <input
-                                    type="email"
-                                    placeholder="email@example.com"
-                                    className="input input-bordered pl-10 w-full"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                            </div>
-                        </div>
+        <div
+            className="min-h-screen flex items-center justify-center bg-gradient-to-r from-primary-light via-primary to-primary-dark relative overflow-hidden"
+            style={{ backgroundSize: 'cover', backgroundPosition: 'center' }}
+        >
+            {/* Hareketli Arkaplan */}
+            <div className="absolute inset-0 bg-opacity-50" style={{
+                backgroundImage: 'url(/movie-background.jpg)',
+                backgroundSize: 'cover',
+                backgroundRepeat: 'no-repeat',
+                filter: 'blur(10px)',
+                zIndex: -1,
+            }}></div>
 
-                        {/* Password Input */}
-                        <div className="form-control mt-4">
-                            <label className="label">
-                                <span className="label-text">Password</span>
-                            </label>
-                            <div className="relative">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 16 16"
-                                        fill="currentColor"
-                                        className="w-5 h-5"
-                                    >
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M14 6a4 4 0 0 1-4.899 3.899l-1.955 1.955a.5.5 0 0 1-.353.146H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2.293a.5.5 0 0 1 .146-.353l3.955-3.955A4 4 0 1 1 14 6Zm-4-2a.75.75 0 0 0 0 1.5.5.5 0 0 1 .5.5.75.75 0 0 0 1.5 0 2 2 0 0 0-2-2Z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
-                                </span>
-                                <input
-                                    type="password"
-                                    placeholder="Enter password"
-                                    className="input input-bordered pl-10 w-full"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                            </div>
-                        </div>
+            <div className="card bg-primary-lighter shadow-xl p-8 max-w-md w-full text-accent rounded-lg">
+                {/* Logo */}
+                <div className="flex justify-center mb-8">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 100 100"
+                        style={{ height: '100px', width: '100px', filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4))' }}
+                    >
+                        {/* Palet Renkleriyle "N" harfi */}
+                        <defs>
+                            <linearGradient id="palette-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style={{ stopColor: '#F2BB77', stopOpacity: 1 }} />
+                                <stop offset="50%" style={{ stopColor: '#A66E4E', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#F2E2CE', stopOpacity: 1 }} />
+                            </linearGradient>
+                        </defs>
+                        {/* "N" harfi */}
+                        <path
+                            d="M20 90 L20 10 L40 10 L60 60 L60 10 L80 10 L80 90 L60 90 L40 40 L40 90 Z"
+                            fill="url(#palette-gradient)"
+                        />
+                    </svg>
+                </div>
 
-                        {/* Login Button */}
-                        <div className="form-control mt-6">
-                            <button type="submit" className="btn btn-primary w-full">
-                                Login
-                            </button>
-                        </div>
-                    </form>
-
-                    {/* Divider */}
-                    <div className="divider">OR</div>
-
-                    {/* Sign Up Link */}
-                    <div className="text-center">
-                        <p>Don&apos;t have an account?</p>
-                        <Link href="/register" className="link link-primary">
-                            Sign up now
-                        </Link>
+                <h2 className="text-3xl font-bold text-center mb-6 animate-pulse">Welcome Back!</h2>
+                <form onSubmit={handleSubmit}>
+                    {/* Email Input */}
+                    <div className="form-control mb-4">
+                        <label className="label">
+                            <span className="label-text text-accent-dark">Email</span>
+                        </label>
+                        <input
+                            type="email"
+                            placeholder="email@example.com"
+                            className="input input-bordered w-full text-white bg-gray-800"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
                     </div>
 
-                    {/* Error Message */}
-                    {message && <p className="text-red-500 mt-4">{message}</p>}
+                    {/* Password Input */}
+                    <div className="form-control mb-6">
+                        <label className="label">
+                            <span className="label-text text-accent-dark">Password</span>
+                        </label>
+                        <input
+                            type="password"
+                            placeholder="Enter password"
+                            className="input input-bordered w-full text-white bg-gray-800"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Login Button */}
+                    <div className="form-control">
+                        <button type="submit" className="btn bg-accent text-white w-full transition-transform transform hover:scale-105">
+                            Login
+                        </button>
+                    </div>
+                </form>
+
+                {/* Divider */}
+                <div className="divider text-accent-dark my-6">OR</div>
+
+                {/* Sign Up Link */}
+                <div className="text-center">
+                    <p>Don&apos;t have an account?</p>
+                    <Link href="/register" className="link link-primary text-accent hover:underline">
+                        Sign up now
+                    </Link>
                 </div>
+
+                {/* Error Message */}
+                {message && <p className="text-red-500 mt-4">{message}</p>}
             </div>
         </div>
     );

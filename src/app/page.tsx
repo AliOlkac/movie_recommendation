@@ -338,20 +338,10 @@ export default function Home() {
                             onClick={() => {
                                 // Film seçildiğinde selectedMovie ayarla
                                 setSelectedMovie(movie);
-                                // "rating-section" öğesine otomatik kaydırma yap (smooth scroll)
-                                const ratingSection = document.getElementById("rating-section");
-                                if (ratingSection) {
-                                    ratingSection.scrollIntoView({
-                                        behavior: "smooth",
-                                        block: "center",
-                                    });
-                                }
                             }}
                         >
                             {/* Filmin adı */}
-                            <h3 className="text-sm font-bold text-accent-dark">
-                                {movie.title}
-                            </h3>
+                            <h3 className="text-sm font-bold text-accent-dark">{movie.title}</h3>
                             {/* Filmin posteri */}
                             <img
                                 src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
@@ -360,9 +350,69 @@ export default function Home() {
                             />
                         </div>
                     ))}
+
                     {/* Sonsuz kaydırma için sentinel elemanı */}
                     <div id="scroll-sentinel" className="h-10"></div>
                 </div>
+
+                {/* Modal */}
+                {selectedMovie && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                        onClick={() => setSelectedMovie(null)} // Modal kapatmak için dışına tıklama
+                    >
+                        <div
+                            className="bg-primary-lighter rounded-lg shadow-lg p-6 relative w-11/12 max-w-md"
+                            onClick={(e) => e.stopPropagation()} // İçeriğe tıklamayı durdur
+                        >
+                            {/* Kapatma butonu */}
+                            <button
+                                className="absolute top-2 right-2 bg-primary-light text-black rounded-full p-2"
+                                onClick={() => setSelectedMovie(null)}
+                            >
+                                ✕
+                            </button>
+
+                            {/* Modal içeriği */}
+                            <img
+                                src={`https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`}
+                                alt={selectedMovie.title}
+                                className="mx-auto rounded-lg"
+                            />
+                            <h3 className="text-lg font-bold text-center mt-4">{selectedMovie.title}</h3>
+                            <p className="text-sm text-gray-700 mt-2">{selectedMovie.overview}</p>
+
+                            {/* Yıldız Verme */}
+                            <div className="flex justify-center mt-4">
+                                <StarRating
+                                    onRate={(rating) => {
+                                        setWatchedMovies((prev) => [
+                                            ...prev,
+                                            { ...selectedMovie, rating }, // Filmi izlenenler listesine ekle
+                                        ]);
+                                        setSelectedMovie(null); // Modalı kapat
+                                    }}
+                                />
+                            </div>
+
+                            {/* Favorilere Ekleme Butonu */}
+                            <div className="flex justify-center mt-4">
+                                <button
+                                    onClick={() => {
+                                        setFavorites((prev) => [...prev, selectedMovie]); // Favorilere ekle
+                                        setSelectedMovie(null); // Modalı kapat
+                                    }}
+                                    className="btn bg-accent text-white border border-accent-dark hover:bg-accent-dark transition"
+                                >
+                                    ❤ Add to Favorites
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+
+
 
                 {/* Önerilen filmleri listeleme bölümü */}
                 {recommendations && recommendations.length > 0 ? (

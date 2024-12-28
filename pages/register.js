@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import Link from 'next/link'; // Link bileşenini ekleyin
+import Link from 'next/link';
 import Image from 'next/image';
-
-
 
 export default function RegisterPage() {
     const [email, setEmail] = useState('');
@@ -20,136 +18,129 @@ export default function RegisterPage() {
             return;
         }
 
-        const res = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-        });
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
 
-        const data = await res.json();
-        if (res.ok) {
-            router.push('/login');
-        } else {
-            setMessage(data.error || 'Registration failed!');
+            const data = await res.json();
+
+            if (res.ok) {
+                router.push('/login');
+            } else {
+                setMessage(data.error || 'Registration failed!');
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            setMessage('An unexpected error occurred.');
         }
     }
 
     return (
-        <div className="bg-base-200 min-h-screen flex items-center justify-center">
-            <div className="card lg:card-side bg-base-100 shadow-xl max-w-4xl w-full">
-                <figure className="lg:w-1/2">
-                    <Image
-                        src="https://picsum.photos/seed/login/800/600"
-                        alt="Random image"
-                        width={800}
-                        height={600}
-                        className="object-cover w-full h-full"
-                    />
-                </figure>
-                <div className="card-body lg:w-1/2">
-                    <h2 className="card-title text-2xl font-bold mb-6">Register</h2>
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text">Email</span>
-                            </label>
-                            <div className="relative">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 16 16"
-                                        fill="currentColor"
-                                        className="w-5 h-5"
-                                    >
-                                        <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z" />
-                                        <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z" />
-                                    </svg>
-                                </span>
-                                <input
-                                    type="email"
-                                    placeholder="email@example.com"
-                                    className="input input-bordered pl-10 w-full"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <div className="form-control mt-4">
-                            <label className="label">
-                                <span className="label-text">Password</span>
-                            </label>
-                            <div className="relative">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 16 16"
-                                        fill="currentColor"
-                                        className="w-5 h-5"
-                                    >
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M14 6a4 4 0 0 1-4.899 3.899l-1.955 1.955a.5.5 0 0 1-.353.146H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2.293a.5.5 0 0 1 .146-.353l3.955-3.955A4 4 0 1 1 14 6Zm-4-2a.75.75 0 0 0 0 1.5.5.5 0 0 1 .5.5.75.75 0 0 0 1.5 0 2 2 0 0 0-2-2Z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
-                                </span>
-                                <input
-                                    type="password"
-                                    placeholder="Enter password"
-                                    className="input input-bordered pl-10 w-full"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <div className="form-control mt-4">
-                            <label className="label">
-                                <span className="label-text">Confirm Password</span>
-                            </label>
-                            <div className="relative">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 16 16"
-                                        fill="currentColor"
-                                        className="w-5 h-5"
-                                    >
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M14 6a4 4 0 0 1-4.899 3.899l-1.955 1.955a.5.5 0 0 1-.353.146H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2.293a.5.5 0 0 1 .146-.353l3.955-3.955A4 4 0 1 1 14 6Zm-4-2a.75.75 0 0 0 0 1.5.5.5 0 0 1 .5.5.75.75 0 0 0 1.5 0 2 2 0 0 0-2-2Z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
-                                </span>
-                                <input
-                                    type="password"
-                                    placeholder="Confirm password"
-                                    className="input input-bordered pl-10 w-full"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <div className="form-control mt-6">
-                            <button type="submit" className="btn btn-primary w-full">
-                                Register
-                            </button>
-                        </div>
-                    </form>
-                    <div className="divider">OR</div>
-                    <div className="text-center">
-                        <p>Already have an account?</p>
-                        <Link href="/login" className="link link-primary">
-                            Login here
-                        </Link>
-                    </div>
-                    {message && <p className="text-red-500 mt-4">{message}</p>}
+        <div
+            className="min-h-screen flex items-center justify-center bg-gradient-to-r from-primary-light via-primary to-primary-dark relative overflow-hidden"
+            style={{ backgroundSize: 'cover', backgroundPosition: 'center' }}
+        >
+            {/* Hareketli Arkaplan */}
+            <div className="absolute inset-0 bg-opacity-50" style={{
+                backgroundImage: 'url(/register-background.jpg)',
+                backgroundSize: 'cover',
+                backgroundRepeat: 'no-repeat',
+                filter: 'blur(10px)',
+                zIndex: -1,
+            }}></div>
+
+            <div className="card bg-primary-lighter shadow-xl p-8 max-w-md w-full text-accent rounded-lg">
+                {/* Logo */}
+                <div className="flex justify-center mb-8">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 100 100"
+                        style={{ height: '100px', width: '100px', filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4))' }}
+                    >
+                        {/* Palet Renkleriyle "N" harfi */}
+                        <defs>
+                            <linearGradient id="palette-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style={{ stopColor: '#F2BB77', stopOpacity: 1 }} />
+                                <stop offset="50%" style={{ stopColor: '#A66E4E', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#F2E2CE', stopOpacity: 1 }} />
+                            </linearGradient>
+                        </defs>
+                        <path
+                            d="M20 90 L20 10 L40 10 L60 60 L60 10 L80 10 L80 90 L60 90 L40 40 L40 90 Z"
+                            fill="url(#palette-gradient)"
+                        />
+                    </svg>
                 </div>
+
+                <h2 className="text-3xl font-bold text-center mb-6 animate-pulse">Create an Account</h2>
+                <form onSubmit={handleSubmit}>
+                    {/* Email Input */}
+                    <div className="form-control mb-4">
+                        <label className="label">
+                            <span className="label-text text-accent-dark">Email</span>
+                        </label>
+                        <input
+                            type="email"
+                            placeholder="email@example.com"
+                            className="input input-bordered w-full text-white bg-gray-800"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Password Input */}
+                    <div className="form-control mb-4">
+                        <label className="label">
+                            <span className="label-text text-accent-dark">Password</span>
+                        </label>
+                        <input
+                            type="password"
+                            placeholder="Enter password"
+                            className="input input-bordered w-full text-white bg-gray-800"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Confirm Password Input */}
+                    <div className="form-control mb-6">
+                        <label className="label">
+                            <span className="label-text text-accent-dark">Confirm Password</span>
+                        </label>
+                        <input
+                            type="password"
+                            placeholder="Confirm password"
+                            className="input input-bordered w-full text-white bg-gray-800"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Register Button */}
+                    <div className="form-control">
+                        <button type="submit" className="btn bg-accent text-white w-full transition-transform transform hover:scale-105">
+                            Register
+                        </button>
+                    </div>
+                </form>
+
+                {/* Divider */}
+                <div className="divider text-accent-dark my-6">OR</div>
+
+                {/* Login Link */}
+                <div className="text-center">
+                    <p>Already have an account?</p>
+                    <Link href="/login" className="link link-primary text-accent hover:underline">
+                        Login here
+                    </Link>
+                </div>
+
+                {/* Error Message */}
+                {message && <p className="text-red-500 mt-4">{message}</p>}
             </div>
         </div>
     );
 }
-
-
-
-
