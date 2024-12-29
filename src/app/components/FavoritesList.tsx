@@ -1,36 +1,48 @@
-"use client";
+"use client"; // Bu dosyanın client-side render için kullanılacağını belirtir
 
-import { useState } from "react";
+import { useState } from "react"; // React Hook olan useState'i içe aktarır
 
-// Film bilgilerini temsil eden bir arayüz
+// -----------------------------------------------------------------------------
+// 1) Tip (interface) Tanımları
+// -----------------------------------------------------------------------------
+
+/** Filmleri temsil eden arayüz */
 interface Movie {
-    id: number; // Filmin benzersiz kimliği
+    id: number; // Filmin benzersiz kimliği (ör: TMDB'den gelen id)
     title: string; // Filmin başlığı
-    poster_path: string; // Poster görüntüsü yolu
+    poster_path: string; // Poster görüntüsüne ulaşmak için yol (ör: "/poster.jpg")
 }
 
-// Favoriler listesini temsil eden bileşenin özelliklerini tanımlayan bir arayüz
+/** Favori filmleri ve kaldırma işlevini temsil eden bileşenin özellikleri */
 interface FavoritesListProps {
-    favorites: Movie[]; // Favoriler dizisi
-    onRemove: (movie: Movie) => void; // Favorilerden bir filmi kaldırmak için bir işlev
+    favorites: Movie[]; // Favori filmler listesi
+    onRemove: (movie: Movie) => void; // Bir filmi favorilerden kaldırmak için çağrılan işlev
 }
 
-// Favoriler listesini yönetmek için bir React bileşeni
+// -----------------------------------------------------------------------------
+// 2) Favoriler Listesi Bileşeni
+// -----------------------------------------------------------------------------
+
+/**
+ * Bu bileşen, kullanıcıların favori filmlerini listelemelerini sağlar.
+ * Kullanıcı, listeden bir filmi kaldırabilir veya paneli açıp kapatabilir.
+ */
 export default function FavoritesList({ favorites, onRemove }: FavoritesListProps) {
-    const [isOpen, setIsOpen] = useState(false); // Panelin açık/kapalı durumunu takip eden state
+    // Panelin açık/kapalı durumunu kontrol eden state
+    const [isOpen, setIsOpen] = useState(false);
 
     return (
         <>
             {/* Favoriler Butonu */}
             <button
                 className="fixed top-4 left-4 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-md z-50"
-                onClick={() => setIsOpen(!isOpen)} // Butona tıklayınca panelin durumunu değiştirir
+                onClick={() => setIsOpen(!isOpen)} // Butona tıklanınca panelin durumunu değiştir
             >
                 ❤ {/* Butonun içindeki kalp simgesi */}
             </button>
 
             {/* Favoriler Paneli */}
-            {isOpen && (
+            {isOpen && ( // Eğer panel açıksa, paneli render et
                 <div
                     className="fixed left-0 top-0 h-full w-64 bg-primary-lighter text-accent-dark shadow-md p-4 overflow-y-auto z-40 rounded-lg"
                 >
@@ -51,7 +63,7 @@ export default function FavoritesList({ favorites, onRemove }: FavoritesListProp
                                 />
                                 {/* Film Başlığı */}
                                 <div className="flex-1">
-                                    <p className="text-accent-dark font-bold">{movie.title}</p>
+                                    <p className="text-accent-dark font-bold">{movie.title}</p> {/* Filmin adı */}
                                 </div>
                                 {/* Favorilerden Kaldırma Butonu */}
                                 <button

@@ -1,27 +1,56 @@
-import jwt from 'jsonwebtoken';
-import { User } from '../../models';
+import jwt from 'jsonwebtoken'; // JWT işlemleri için jsonwebtoken kütüphanesini içe aktarıyoruz
+import { User } from '../../models'; // Veritabanı işlemleri için User modelini içe aktarıyoruz
 
+// JWT gizli anahtarını tanımlıyoruz (çevresel değişken veya sabit bir değer kullanılıyor)
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
+// -----------------------------------------------------------------------------
+// API Handler: Kullanıcı Doğrulama ve Bilgi Getirme
+// -----------------------------------------------------------------------------
 export default async function handler(req, res) {
-    const authHeader = req.headers.authorization;
+    // -------------------------------------------------------------------------
+    // 1) Authorization Header Kontrolü
+    // -------------------------------------------------------------------------
+    const authHeader = req.headers.authorization; // Authorization başlığını al
 
     if (!authHeader) {
-        return res.status(401).json({ error: 'No token provided' });
+        // Eğer Authorization başlığı yoksa hata döndür
+        return res.status(401).json({
+            error: 'No token provided', // Hata mesajı: Token sağlanmadı
+        });
     }
 
-    const token = authHeader.split(' ')[1];
+    // Authorization başlığından JWT token'ını ayıkla
+    const token = authHeader.split(' ')[1]; // Bearer token formatında: "Bearer <token>"
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const user = await User.findByPk(decoded.userId, { attributes: ['id', 'email'] });
+        // ---------------------------------------------------------------------
+        // 2) Token Doğrulama
+        // ---------------------------------------------------------------------
+        const decoded = jwt.verify(token, JWT_SECRET); // Token doğrulama işlemi
+
+        // Doğrulanan token'dan kullanıcı ID'sini al ve veritabanında ara
+        const user = await User.findByPk(decoded.userId, {
+            attributes: ['id', 'email'], // Kullanıcıdan yalnızca gerekli alanları al
+        });
 
         if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+            // Eğer kullanıcı bulunamazsa hata döndür
+            return res.status(404).json({
+                error: 'User not found', // Hata mesajı: Kullanıcı bulunamadı
+            });
         }
 
-        return res.status(200).json({ user });
+        // ---------------------------------------------------------------------
+        // 3) Kullanıcı Bilgilerini Döndürme
+        // ---------------------------------------------------------------------
+        return res.status(200).json({
+            user, // Başarıyla bulunan kullanıcı bilgileri
+        });
     } catch (error) {
-        return res.status(401).json({ error: 'Invalid token' });
+        // Eğer token doğrulama sırasında hata oluşursa
+        return res.status(401).json({
+            error: 'Invalid token', // Hata mesajı: Geçersiz token
+        });
     }
 }
