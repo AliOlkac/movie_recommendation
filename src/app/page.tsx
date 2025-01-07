@@ -1,4 +1,4 @@
-"use client"; // <-- Bu dosyanın (page.tsx) Next.js tarafında client-side render edileceğini belirtir
+"use client";
 
 import { useEffect, useState } from "react"; // <-- React Hook'ları import ediyoruz
 import SearchBar from "./components/SearchBar"; // <-- Arama bileşeni
@@ -191,7 +191,7 @@ export default function Home() {
             // İzlenen filmleri rating'e göre büyükten küçüğe sırala ve ilk 5 tanesini seç
             const topRated = [...watchedMovies]
                 .sort((a, b) => b.rating - a.rating)
-                .slice(0, 5);
+
 
             // Flask'a göndereceğimiz format: { film_adi: "..", yildiz_sayi: 5 }
             const moviesToSend = topRated.map((mov) => ({
