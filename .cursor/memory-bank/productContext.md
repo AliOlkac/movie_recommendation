@@ -10,6 +10,7 @@ Günümüzde binlerce film arasından kullanıcıların ilgilerini çekebilecek 
 Film Öneri Sistemi, kullanıcıların film değerlendirmelerini analiz ederek kişiselleştirilmiş öneriler sunar:
 - Collaborative filtering algoritmaları benzer beğenilere sahip kullanıcıları gruplayarak öneriler oluşturur
 - Kullanıcılar filmleri değerlendirdikçe öneriler daha doğru hale gelir
+- Kapsamlı veri seti sayesinde daha çeşitli ve isabetli keşifler mümkün olur.
 - Keşif özelliği ile kullanıcılara yeni türlerden içerikler önerilir
 
 ## Kullanıcı Deneyimi Hedefleri

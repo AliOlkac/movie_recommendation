@@ -13,7 +13,8 @@ Kullanıcılara kişiselleştirilmiş film önerileri sunan, makine öğrenimi (
 - Backend: Python ve Flask ile RESTful API
 - Frontend: Next.js ile modern web arayüzü
 - Model: Collaborative filtering ile film önerileri
-- Veri: MovieLens veri seti (başlangıç için MovieLens Latest Small)
+- Veri: MovieLens veri seti (ml-latest - büyük set)
+- Ek Veri: TMDB API entegrasyonu (film afişleri, detaylar)
 
 ## Dışında Kalan Konular
 - Kullanıcı kimlik doğrulama/yetkilendirme (ilk aşamada)
