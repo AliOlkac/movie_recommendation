@@ -1,32 +1,33 @@
 # Film Öneri Sistemi - Proje Özeti
 
 ## Proje Amacı
-Kullanıcılara kişiselleştirilmiş film önerileri sunan, makine öğrenimi (collaborative filtering) temelli bir web uygulaması geliştirmek.
+Kullanıcılara kişiselleştirilmiş film önerileri sunan, makine öğrenimi (collaborative filtering) temelli bir web uygulaması geliştirmek. Bu uygulama, MovieLens veri setini ve TMDB API'sini kullanarak zengin bir kullanıcı deneyimi sunmayı hedefler.
 
 ## Temel Hedefler
-1. MovieLens veri seti kullanarak collaborative filtering modelini geliştirmek
-2. Kullanıcıların film arayabileceği ve değerlendirebileceği bir platform sunmak
-3. Kişiselleştirilmiş film önerileri sağlamak
-4. Modern ve kullanımı kolay bir arayüz tasarlamak
+1.  **Model Geliştirme:** MovieLens veri setini kullanarak etkili bir collaborative filtering modeli (örn: SVD, kullanıcı/film benzerliği) geliştirmek.
+2.  **API Oluşturma:** Flask kullanarak, film verileri ve önerileri sunan bir RESTful API oluşturmak.
+3.  **Frontend Geliştirme:** Next.js kullanarak modern, duyarlı ve kullanıcı dostu bir web arayüzü oluşturmak.
+4.  **TMDB Entegrasyonu:** Film afişleri, özetleri ve diğer detaylar için TMDB API'sini entegre etmek.
+5.  **Kişiselleştirme:** Kullanıcıların değerlendirmelerine dayalı olarak kişiselleştirilmiş film önerileri sunmak.
+6.  **Keşif:** Kullanıcıların yeni filmler keşfetmesini sağlamak (benzer filmler, popüler filmler vb.).
 
 ## Kapsam
-- Backend: Python ve Flask ile RESTful API
-- Frontend: Next.js ile modern web arayüzü
-- Model: Collaborative filtering ile film önerileri
-- Veri: MovieLens veri seti (ml-latest - büyük set)
-- Ek Veri: TMDB API entegrasyonu (film afişleri, detaylar)
+-   **Backend:** Python, Flask, Pandas, Surprise/Scikit-learn
+-   **Frontend:** Next.js, React, TypeScript, Tailwind CSS
+-   **Veri Kaynağı:** MovieLens (ml-latest) veri seti
+-   **Ek Veri Kaynağı:** TMDB API
+-   **Öneri Modeli:** Collaborative Filtering (bellek tabanlı ve/veya model tabanlı)
+-   **Temel Özellikler:** Film listeleme, arama, detay görüntüleme, değerlendirme, kişisel öneriler, benzer film önerileri.
 
-## Dışında Kalan Konular
-- Kullanıcı kimlik doğrulama/yetkilendirme (ilk aşamada)
-- Ödeme sistemi entegrasyonu
-- Mobil uygulama
-
-## Paydaşlar
-- Son kullanıcılar: Film severlere hizmet edecek
-- Geliştiriciler: Projeyi geliştiren ekip
+## Dışında Kalan Konular (İlk Aşama)
+-   Kapsamlı kullanıcı kimlik doğrulama ve yetkilendirme sistemi (basit bir kullanıcı ID sistemi olabilir)
+-   Sosyal özellikler (arkadaş listesi, paylaşım vb.)
+-   Gelişmiş içerik tabanlı filtreleme (tag genome kullanımı)
+-   Mobil uygulama
 
 ## Başarı Kriterleri
-- Doğru ve alakalı film önerileri sunabilmek
-- Kullanıcı dostu ve duyarlı (responsive) bir arayüz
-- Modelin performansı (öneri doğruluğu, işlem hızı)
-- Sistem kararlılığı ve ölçeklenebilirliği 
+-   Doğru ve çeşitli film önerileri sunabilme.
+-   Hızlı ve duyarlı bir kullanıcı arayüzü.
+-   Modelin makul bir sürede öneri üretebilmesi.
+-   TMDB entegrasyonunun sorunsuz çalışması.
+-   Sistemin temel fonksiyonlarının kararlı çalışması. 

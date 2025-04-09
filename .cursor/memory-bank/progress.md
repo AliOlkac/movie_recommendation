@@ -1,70 +1,62 @@
 # Proje İlerleme Durumu
 
+*Son Güncelleme: 09/04/2024*
+
 ## Tamamlanan İşler
-- [X] Proje gereksinimlerinin tanımlanması (Backend: Flask, Frontend: Next.js)
-- [X] Memory Bank'in oluşturulması ve proje dokümantasyonunun başlatılması
-- [X] Veri seti seçimi (MovieLens ml-latest)
-- [X] TMDB API entegrasyon kararı
-- [X] Collaborative Filtering yaklaşımının belirlenmesi (SVD)
-- [X] Detaylı proje planının oluşturulması
-- [X] Memory Bank'in güncellenmesi
+-   [X] Proje gereksinimlerinin ve kapsamının tanımlanması.
+-   [X] Teknoloji yığınının seçilmesi (Flask, Next.js, MovieLens, TMDB).
+-   [X] Sistem mimarisi ve temel iş akışının belirlenmesi.
+-   [X] MovieLens `ml-latest` veri setinin temin edilmesi.
+-   [X] Memory Bank temel dosyalarının oluşturulması ve doldurulması.
+-   [X] `.cursor/memory-bank` dizininin oluşturulması.
+-   [X] Proje iskeletinin (ana `backend` ve `frontend` klasörleri) kurulması.
+-   [X] Backend geliştirme ortamının (`venv`, `requirements.txt`) hazırlanması.
+-   [X] Frontend geliştirme ortamının (`create-next-app` ile kurulum) hazırlanması.
+-   [X] `backend` iç klasör yapısının oluşturulması (örn: `models`, `utils`, `app.py`).
+-   [X] Temel Flask uygulamasının (`backend/app.py`) oluşturulması ve test edilmesi.
+-   [X] Veri yükleme ve temel ön işleme (`backend/utils/preprocess.py`).
+-   [X] Collaborative Filtering modelinin (`backend/models/collaborative_filter.py`) geliştirilmesi ve temel testlerinin yapılması.
+-   [X] Eğitilmiş modelin (`.joblib` dosyası) diske kaydedilmesi ve yüklenmesi için mekanizmaların eklenmesi ve test edilmesi.
 
 ## Devam Eden İşler
-- [ ] Proje yapısının oluşturulması (backend ve frontend klasörleri)
-- [ ] Backend (Flask) ve Frontend (Next.js) projelerinin başlatılması
+-   [ ] Modelin API üzerinden kullanılabilir hale getirilmesi (model yükleme ve tahmin fonksiyonlarının API'ye entegrasyonu - `backend/app.py`).
 
-## Yapılacak İşler
+## Yapılacak İşler (Genel Bakış)
 
 ### Backend Görevleri
-- [ ] Flask API projesinin başlatılması ve temel yapının kurulması
-- [ ] `requirements.txt` dosyasının oluşturulması ve bağımlılıkların eklenmesi
-- [ ] MovieLens (ml-latest) veri setinin işlenmesi için script'lerin geliştirilmesi
-- [ ] Veri modeli tasarımı (SQLAlchemy modelleri)
-- [ ] Collaborative Filtering (SVD) algoritmasının `Surprise` ile uygulanması
-- [ ] Modelin eğitilmesi ve kaydedilmesi
-- [ ] API endpoint'lerinin (`/api/movies`, `/api/recommendations`, `/api/ratings` vb.) oluşturulması
-- [ ] CORS yapılandırması
-- [ ] Birim testlerin yazılması (PyTest)
+-   [ ] CORS yapılandırmasının gözden geçirilmesi/iyileştirilmesi (`backend/app.py`).
+-   [ ] API endpoint'lerinin (`backend/routes/api.py` veya `app.py` içinde) oluşturulması (film listesi, detay vb. - öneri dışındakiler).
+-   [ ] Temel API testlerinin yapılması (öneri endpoint'i için).
 
 ### Frontend Görevleri
-- [ ] Next.js projesinin başlatılması ve temel yapının kurulması
-- [ ] `package.json` dosyasının oluşturulması ve bağımlılıkların eklenmesi (TypeScript, TailwindCSS, Axios, React Query vb.)
-- [ ] Sayfa yapısının tasarlanması (Ana Sayfa, Film Detay, Keşfet, Arama, Profil)
-- [ ] Temel React bileşenlerinin oluşturulması (Film Kartı, Navbar, Rating vb.)
-- [ ] TMDB API istemcisinin oluşturulması (film afişleri ve detayları için)
-- [ ] Backend API entegrasyonu (Axios ile istekler)
-- [ ] Kullanıcı arayüzünün tasarlanması (Tailwind CSS ile)
-- [ ] State yönetimi (React Query/Context API)
-- [ ] Birim testlerin yazılması (Jest, React Testing Library)
+-   [ ] Temel sayfa yapısının (`frontend/src/app/page.tsx`, `frontend/src/app/movies/[id]/page.tsx`) oluşturulması.
+-   [ ] Tekrar kullanılabilir bileşenlerin (`frontend/src/components/MovieCard.tsx`, `Navbar.tsx` vb.) oluşturulması.
+-   [ ] Tailwind CSS ile temel stil uygulamasının yapılması (`frontend/src/app/globals.css` ve bileşenler).
+-   [ ] Backend API'sine istek atmak için yardımcı fonksiyonların (`frontend/src/lib/api.ts`) yazılması.
+-   [ ] Film listesi ve detaylarının API'den çekilip gösterilmesi.
+-   [ ] TMDB API entegrasyonu (API anahtarı alma, afiş/özet çekme).
+-   [ ] Kullanıcı değerlendirme mekanizmasının eklenmesi.
+-   [ ] Kişisel önerilerin API'den çekilip gösterilmesi.
 
-### Entegrasyon Görevleri
-- [ ] Backend API ve Frontend arasındaki iletişimin test edilmesi
-- [ ] Öneri sonuçlarının doğruluğunun kontrol edilmesi
-- [ ] End-to-end test senaryolarının oluşturulması
-
-### Dağıtım Görevleri
-- [ ] Backend uygulamasının Vercel'e dağıtılması
-- [ ] Frontend uygulamasının Vercel'e dağıtılması
-- [ ] Veritabanı kurulumu (PostgreSQL - Vercel)
-- [ ] CI/CD pipeline kurulumu (GitHub Actions)
-- [ ] Proje `README.md` dosyasının güncellenmesi
+### Entegrasyon ve Diğer Görevler
+-   [ ] Backend ve Frontend arasındaki API iletişiminin test edilmesi.
+-   [ ] Modelin periyodik eğitimi için bir strateji belirlenmesi.
+-   [ ] Basit kullanıcı yönetimi (opsiyonel).
+-   [ ] Kodun temizlenmesi ve dokümantasyonun güncellenmesi.
+-   [ ] Deployment (Vercel vb.)
 
 ## Mevcut Durum ve Zorluklar
-- Proje planlama ve kurulum aşamasında.
-- Büyük veri setinin ('ml-latest') işlenmesi ve model eğitimi zaman alıcı olabilir, optimize edilmesi gerekecek.
-- TMDB API'nin kullanım limitleri dikkate alınmalı.
+-   **Durum:** Collaborative Filtering modeli eğitildi, kaydedildi/yüklendi ve vektörlerle tahmin yapabiliyor. API entegrasyonuna başlanıyor.
+-   **Potansiyel Zorluklar:**
+    -   `ratings.csv` dosyasının büyüklüğü nedeniyle veri işleme ve model eğitiminin yavaş olması.
+    -   Collaborative filtering modelinin doğruluğunu ve çeşitliliğini optimize etmek.
+    -   TMDB API limitlerini aşmamak.
+    -   Soğuk başlangıç (yeni kullanıcılar için öneri) problemini ele almak.
 
-## Zaman Çizelgesi
-- Başlangıç: [Tarih]
-- Backend Geliştirme (İlk Aşama): [Planlanan Tarih Aralığı]
-- Frontend Geliştirme (İkinci Aşama): [Planlanan Tarih Aralığı]
-- Entegrasyon ve Test: [Planlanan Tarih Aralığı]
-- İlk Çalışan Sürüm (MVP): [Planlanan Tarih]
-
-## Geliştirme Notları
-- Memory Bank başarıyla güncellendi.
-- Proje planı netleştirildi.
-- Sonraki adımlar: Proje iskeletini oluşturmak.
-
-## Bilinen Sorunlar
-- Henüz geliştirme aşamasına geçilmedi. 
+## Tahmini Zaman Çizelgesi
+-   **Hafta 1:** Proje Kurulumu, Backend Temelleri, Veri İşleme -> Bu hafta kurulum tamamlandı, backend temellerine başlanıyor.
+-   **Hafta 2:** Backend Temelleri (devam), API Endpointleri, Frontend Temelleri.
+-   **Hafta 3-4:** Model Geliştirme, Frontend Geliştirme, TMDB Entegrasyonu.
+-   **Hafta 5-6:** API Entegrasyonu, Test, İyileştirme.
+-   **Hafta 7-8:** Dokümantasyon, Deployment.
+*(Bu sadece kaba bir tahmindir ve geliştirme hızına göre değişebilir.)* 

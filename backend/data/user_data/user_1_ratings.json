@@ -1,0 +1,27 @@
+[
+  {
+    "movie_id": 1,
+    "rating": 5.0,
+    "timestamp": 1744019495
+  },
+  {
+    "movie_id": 2,
+    "rating": 5.0,
+    "timestamp": 1744019506
+  },
+  {
+    "movie_id": 6,
+    "rating": 5.0,
+    "timestamp": 1744019514
+  },
+  {
+    "movie_id": 2058,
+    "rating": 3.0,
+    "timestamp": 1744019523
+  },
+  {
+    "movie_id": 2455,
+    "rating": 5.0,
+    "timestamp": 1744019529
+  }
+]
