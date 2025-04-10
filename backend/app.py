@@ -159,27 +159,50 @@ def get_tmdb_poster_path(tmdb_id):
     return poster_path
 # ----------------------------------------------------------------
 
-# --- Film Listesi Endpoint'i (TMDB Entegrasyonu ile) ---
+# --- Film Listesi Endpoint'i (TMDB ve Arama Entegrasyonu ile) ---
 @app.route('/api/movies', methods=['GET'])
 def get_movies():
     """
-    Film listesini (TMDB poster path'leri ile) sayfalama ile döndürür.
+    Film listesini (TMDB poster path'leri ile) sayfalama ve arama ile döndürür.
+    Query Parametreleri:
+        page (int): İstenen sayfa numarası (varsayılan: 1).
+        limit (int): Sayfa başına film sayısı (varsayılan: 20, max: 50).
+        search (str): Film başlıklarında aranacak terim (opsiyonel).
     """
     if movies_df is None or movie_id_to_tmdb_id is None:
         abort(503, description="Film veya link verisi şu anda kullanılamıyor.")
 
     try:
+        # Query parametrelerini al
         page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 20, type=int)
+        search_term = request.args.get('search', None, type=str) # Arama terimini al
+
+        # Limitleri kontrol et
         if page < 1: page = 1
         if limit < 1: limit = 1
-        if limit > 50: limit = 50 
+        if limit > 50: limit = 50
 
+        # Filtreleme için DataFrame'i kopyala (orijinali değiştirmeyelim)
+        filtered_movies_df = movies_df.copy()
+
+        # Arama terimi varsa filtrele
+        if search_term:
+            print(f"Arama yapılıyor: '{search_term}'")
+            filtered_movies_df = filtered_movies_df[
+                filtered_movies_df['title'].str.contains(search_term, case=False, na=False)
+            ]
+            print(f"Arama sonucu {len(filtered_movies_df)} film bulundu.")
+            
+        # Sayfalama için başlangıç/bitiş indexleri ve toplam sayıyı hesapla
+        total_movies = len(filtered_movies_df) # Toplamı filtrelenmiş DataFrame üzerinden al
         start_index = (page - 1) * limit
         end_index = start_index + limit
-        total_movies = len(movies_df)
-        paginated_movies_df = movies_df.iloc[start_index:end_index]
 
+        # Sayfalanmış veriyi al
+        paginated_movies_df = filtered_movies_df.iloc[start_index:end_index]
+
+        # TMDB verilerini ekle (önceki gibi)
         movies_list = []
         for index, row in paginated_movies_df.iterrows():
             movie_data = row.to_dict()
@@ -192,6 +215,7 @@ def get_movies():
             movie_data['posterUrl'] = poster_url
             movies_list.append(movie_data)
 
+        # Yanıtı oluştur
         response = {
             "page": page, "limit": limit, "total_movies": total_movies,
             "total_pages": (total_movies + limit - 1) // limit,

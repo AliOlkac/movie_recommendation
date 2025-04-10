@@ -22,10 +22,12 @@
 -   [X] Film detayları için API endpoint'i oluşturma (`/api/movies/<movie_id>`).
 -   [X] Frontend: Temel sayfa yapısının (Ana sayfa: `page.tsx`, Film Detay: `movies/[id]/page.tsx`) oluşturulması ve test edilmesi.
 -   [X] Frontend: Tekrar kullanılabilir bileşenler için `components` klasörünün oluşturulması.
+-   [X] Frontend: Genel site arka planının ayarlanması.
+-   [X] Frontend: Temel `MovieCard` bileşeninin (afişli) oluşturulması.
+-   [X] Frontend: Ana sayfada ilk 20 filmin API'den çekilip `MovieCard` ile listelenmesi.
 
 ## Devam Eden İşler
--   [ ] Frontend: Genel site arka planını ayarlama (yapıldı, test edildi).
--   [ ] Frontend: Temel `MovieCard` bileşeninin (`components/MovieCard.tsx`) oluşturulması.
+-   [ ] Frontend: Arama çubuğu bileşeni (`components/SearchBar.tsx`) oluşturma.
 
 ## Yapılacak İşler (Genel Bakış)
 
@@ -34,8 +36,7 @@
 -   [ ] Temel API testlerinin yapılması (tüm endpoint'ler için).
 
 ### Frontend Görevleri
--   [ ] Frontend: Arama çubuğu bileşeni oluşturma ve sayfaya yerleştirme.
--   [ ] Frontend: Ana sayfada popüler filmleri `/api/movies`'den çekip listeleme.
+-   [ ] Frontend: Arama çubuğunu ana sayfaya yerleştirme ve temel stil verme.
 -   [ ] Frontend: Film listesi için lazy loading (infinite scroll) implementasyonu.
 -   [ ] Frontend: `MovieCard` içinde 5 yıldızlı puanlama sistemi ekleme.
 -   [ ] Frontend: Puanlanan filmleri göstermek için sağ panel bileşeni oluşturma.
@@ -58,7 +59,7 @@
 -   [ ] Deployment (Vercel vb.)
 
 ## Mevcut Durum ve Zorluklar
--   **Durum:** Frontend için temel sayfa yapısı ve `components` klasörü hazır. Genel arkaplan ayarlandı. `MovieCard` bileşeni oluşturulacak.
+-   **Durum:** Frontend ana sayfası temel film listesini (afişli) gösteriyor. Arama çubuğu bileşeni oluşturulacak.
 -   **Potansiyel Zorluklar:**
     -   `ratings.csv` dosyasının büyüklüğü nedeniyle veri işleme ve model eğitiminin yavaş olması.
     -   Collaborative filtering modelinin doğruluğunu ve çeşitliliğini optimize etmek.

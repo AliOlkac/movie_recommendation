@@ -22,14 +22,24 @@ export interface PaginatedMoviesResponse {
 }
 
 /**
- * Backend API'sinden film listesini (sayfalanmış) getirir.
+ * Backend API'sinden film listesini getirir.
  * @param page İstenen sayfa numarası
  * @param limit Sayfa başına film sayısı
+ * @param searchTerm Film başlıklarında aranacak terim (opsiyonel)
  * @returns Film verilerini içeren bir Promise döndürür. Hata durumunda null döner.
  */
-export async function fetchMovies(page: number = 1, limit: number = 20): Promise<PaginatedMoviesResponse | null> {
-  const url = `${API_BASE_URL}/movies?page=${page}&limit=${limit}`;
-  console.log(`Fetching movies from: ${url}`); // İstek URL'sini loglayalım
+export async function fetchMovies(
+  page: number = 1, 
+  limit: number = 20, 
+  searchTerm?: string // Arama terimi parametresi eklendi
+): Promise<PaginatedMoviesResponse | null> {
+  // URL'ye search parametresini sadece varsa ekle
+  let url = `${API_BASE_URL}/movies?page=${page}&limit=${limit}`;
+  if (searchTerm && searchTerm.trim() !== '') {
+    url += `&search=${encodeURIComponent(searchTerm.trim())}`; // URL encode etmeyi unutma
+  }
+
+  console.log(`Fetching movies from: ${url}`); 
 
   try {
     const response = await fetch(url, {
