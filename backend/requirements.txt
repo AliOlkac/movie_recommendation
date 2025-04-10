@@ -1,4 +1,5 @@
 Flask
 Flask-CORS
 pandas
-scikit-learn 
+scikit-learn
+requests # HTTP istekleri için (TMDB API) 

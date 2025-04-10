@@ -17,23 +17,35 @@
 -   [X] Veri yükleme ve temel ön işleme (`backend/utils/preprocess.py`).
 -   [X] Collaborative Filtering modelinin (`backend/models/collaborative_filter.py`) geliştirilmesi ve temel testlerinin yapılması.
 -   [X] Eğitilmiş modelin (`.joblib` dosyası) diske kaydedilmesi ve yüklenmesi için mekanizmaların eklenmesi ve test edilmesi.
+-   [X] Modelin API üzerinden kullanılabilir hale getirilmesi (model yükleme ve `/api/recommendations/<user_id>` endpoint'i).
+-   [X] Film listesi için API endpoint'i oluşturma (`/api/movies`, sayfalama ile).
+-   [X] Film detayları için API endpoint'i oluşturma (`/api/movies/<movie_id>`).
+-   [X] Frontend: Temel sayfa yapısının (Ana sayfa: `page.tsx`, Film Detay: `movies/[id]/page.tsx`) oluşturulması ve test edilmesi.
+-   [X] Frontend: Tekrar kullanılabilir bileşenler için `components` klasörünün oluşturulması.
 
 ## Devam Eden İşler
--   [ ] Modelin API üzerinden kullanılabilir hale getirilmesi (model yükleme ve tahmin fonksiyonlarının API'ye entegrasyonu - `backend/app.py`).
+-   [ ] Frontend: Genel site arka planını ayarlama (yapıldı, test edildi).
+-   [ ] Frontend: Temel `MovieCard` bileşeninin (`components/MovieCard.tsx`) oluşturulması.
 
 ## Yapılacak İşler (Genel Bakış)
 
 ### Backend Görevleri
 -   [ ] CORS yapılandırmasının gözden geçirilmesi/iyileştirilmesi (`backend/app.py`).
--   [ ] API endpoint'lerinin (`backend/routes/api.py` veya `app.py` içinde) oluşturulması (film listesi, detay vb. - öneri dışındakiler).
--   [ ] Temel API testlerinin yapılması (öneri endpoint'i için).
+-   [ ] Temel API testlerinin yapılması (tüm endpoint'ler için).
 
 ### Frontend Görevleri
--   [ ] Temel sayfa yapısının (`frontend/src/app/page.tsx`, `frontend/src/app/movies/[id]/page.tsx`) oluşturulması.
--   [ ] Tekrar kullanılabilir bileşenlerin (`frontend/src/components/MovieCard.tsx`, `Navbar.tsx` vb.) oluşturulması.
--   [ ] Tailwind CSS ile temel stil uygulamasının yapılması (`frontend/src/app/globals.css` ve bileşenler).
+-   [ ] Frontend: Arama çubuğu bileşeni oluşturma ve sayfaya yerleştirme.
+-   [ ] Frontend: Ana sayfada popüler filmleri `/api/movies`'den çekip listeleme.
+-   [ ] Frontend: Film listesi için lazy loading (infinite scroll) implementasyonu.
+-   [ ] Frontend: `MovieCard` içinde 5 yıldızlı puanlama sistemi ekleme.
+-   [ ] Frontend: Puanlanan filmleri göstermek için sağ panel bileşeni oluşturma.
+-   [ ] Frontend: Puanlama durumunu yönetme (React State/Context/Zustand vb.).
+-   [ ] Frontend: En az 5 film puanlandığında aktif olan "Film Öner" butonu ekleme.
+-   [ ] Frontend: "Film Öner" butonuna tıklandığında `/api/recommendations/<user_id>` endpoint'ini çağırma (şimdilik sabit ID ile).
+-   [ ] Frontend: Tekrar kullanılabilir bileşenlerin (`frontend/src/components/MovieCard.tsx` vb.) oluşturulması.
+-   [ ] Tailwind CSS ile genel stil uygulamasının yapılması/iyileştirilmesi.
 -   [ ] Backend API'sine istek atmak için yardımcı fonksiyonların (`frontend/src/lib/api.ts`) yazılması.
--   [ ] Film listesi ve detaylarının API'den çekilip gösterilmesi.
+-   [ ] Film detay sayfasını (`movies/[id]/page.tsx`) API'den veri çekecek şekilde geliştirme.
 -   [ ] TMDB API entegrasyonu (API anahtarı alma, afiş/özet çekme).
 -   [ ] Kullanıcı değerlendirme mekanizmasının eklenmesi.
 -   [ ] Kişisel önerilerin API'den çekilip gösterilmesi.
@@ -46,7 +58,7 @@
 -   [ ] Deployment (Vercel vb.)
 
 ## Mevcut Durum ve Zorluklar
--   **Durum:** Collaborative Filtering modeli eğitildi, kaydedildi/yüklendi ve vektörlerle tahmin yapabiliyor. API entegrasyonuna başlanıyor.
+-   **Durum:** Frontend için temel sayfa yapısı ve `components` klasörü hazır. Genel arkaplan ayarlandı. `MovieCard` bileşeni oluşturulacak.
 -   **Potansiyel Zorluklar:**
     -   `ratings.csv` dosyasının büyüklüğü nedeniyle veri işleme ve model eğitiminin yavaş olması.
     -   Collaborative filtering modelinin doğruluğunu ve çeşitliliğini optimize etmek.
