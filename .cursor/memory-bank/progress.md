@@ -25,9 +25,9 @@
 -   [X] Frontend: Genel site arka planının ayarlanması.
 -   [X] Frontend: Temel `MovieCard` bileşeninin (afişli) oluşturulması.
 -   [X] Frontend: Ana sayfada ilk 20 filmin API'den çekilip `MovieCard` ile listelenmesi.
+-   [X] Frontend: Arama çubuğu bileşeni (`components/SearchBar.tsx`) oluşturma ve ana sayfaya entegre etme (canlı arama dahil).
 
 ## Devam Eden İşler
--   [ ] Frontend: Arama çubuğu bileşeni (`components/SearchBar.tsx`) oluşturma.
 
 ## Yapılacak İşler (Genel Bakış)
 
@@ -36,18 +36,17 @@
 -   [ ] Temel API testlerinin yapılması (tüm endpoint'ler için).
 
 ### Frontend Görevleri
--   [ ] Frontend: Arama çubuğunu ana sayfaya yerleştirme ve temel stil verme.
--   [ ] Frontend: Film listesi için lazy loading (infinite scroll) implementasyonu.
--   [ ] Frontend: `MovieCard` içinde 5 yıldızlı puanlama sistemi ekleme.
+-   [ ] Frontend: Film detayları ve puanlama için modal oluşturma (`MovieModal.tsx`).
+-   [ ] Frontend: Tekrar kullanılabilir puanlama yıldızları bileşeni oluşturma (`RatingStars.tsx`).
 -   [ ] Frontend: Puanlanan filmleri göstermek için sağ panel bileşeni oluşturma.
+-   [ ] Frontend: Film listesi için lazy loading (infinite scroll) implementasyonu.
 -   [ ] Frontend: Puanlama durumunu yönetme (React State/Context/Zustand vb.).
 -   [ ] Frontend: En az 5 film puanlandığında aktif olan "Film Öner" butonu ekleme.
 -   [ ] Frontend: "Film Öner" butonuna tıklandığında `/api/recommendations/<user_id>` endpoint'ini çağırma (şimdilik sabit ID ile).
 -   [ ] Frontend: Tekrar kullanılabilir bileşenlerin (`frontend/src/components/MovieCard.tsx` vb.) oluşturulması.
 -   [ ] Tailwind CSS ile genel stil uygulamasının yapılması/iyileştirilmesi.
 -   [ ] Backend API'sine istek atmak için yardımcı fonksiyonların (`frontend/src/lib/api.ts`) yazılması.
--   [ ] Film detay sayfasını (`movies/[id]/page.tsx`) API'den veri çekecek şekilde geliştirme.
--   [ ] TMDB API entegrasyonu (API anahtarı alma, afiş/özet çekme).
+-   [ ] Frontend: TMDB API entegrasyonu (API anahtarı ayarlama, modal içinde özet/detay çekme).
 -   [ ] Kullanıcı değerlendirme mekanizmasının eklenmesi.
 -   [ ] Kişisel önerilerin API'den çekilip gösterilmesi.
 
@@ -59,12 +58,13 @@
 -   [ ] Deployment (Vercel vb.)
 
 ## Mevcut Durum ve Zorluklar
--   **Durum:** Frontend ana sayfası temel film listesini (afişli) gösteriyor. Arama çubuğu bileşeni oluşturulacak.
+-   **Durum:** Frontend ana sayfası popüler filmleri listeliyor ve canlı arama işlevselliği çalışıyor. Sırada, tıklanan film için detayları (özet dahil) ve puanlama seçeneklerini gösteren bir modal pencere oluşturma var. Film özetleri doğrudan TMDB API'sinden çekilecek. Puanlanan filmler için sağ panel fikri eklendi.
 -   **Potansiyel Zorluklar:**
     -   `ratings.csv` dosyasının büyüklüğü nedeniyle veri işleme ve model eğitiminin yavaş olması.
     -   Collaborative filtering modelinin doğruluğunu ve çeşitliliğini optimize etmek.
-    -   TMDB API limitlerini aşmamak.
+    -   TMDB API limitlerini aşmamak (özellikle doğrudan frontend çağrılarında).
     -   Soğuk başlangıç (yeni kullanıcılar için öneri) problemini ele almak.
+    -   API anahtarının frontend'de yönetimi (güvenlik konusu - ileride proxy düşünülebilir).
 
 ## Tahmini Zaman Çizelgesi
 -   **Hafta 1:** Proje Kurulumu, Backend Temelleri, Veri İşleme -> Bu hafta kurulum tamamlandı, backend temellerine başlanıyor.

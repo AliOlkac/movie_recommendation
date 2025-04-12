@@ -15,7 +15,7 @@ export default function HomePage() {
       </div>
 
       <h2 className="text-3xl font-bold text-yellow-500 mb-6 text-center border-b-2 border-yellow-500/30 pb-2">
-        Filmleri Keşfet
+        Discover Movies
       </h2>
       <MovieList />
 

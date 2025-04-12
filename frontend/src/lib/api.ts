@@ -8,6 +8,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/a
 // Backend'den gelen yanıta göre bu tipler daha detaylı olabilir
 export interface Movie {
   movieId: number;
+  tmdbId: number | null;
   title: string;
   genres: string;
   posterUrl: string | null;
@@ -73,4 +74,65 @@ export interface MovieDetails extends Movie {
     overview: string | null;
     vote_average: number | null;
     release_date: string | null;
+}
+
+/**
+ * TMDB API'sinden dönen film detaylarının yapısını tanımlar.
+ */
+export interface TmdbMovieDetails {
+  id: number;
+  title: string;
+  overview: string; // Film özeti
+  poster_path: string | null; // Afiş yolu (base URL eklenmeli)
+  release_date: string; // Yayın tarihi
+  vote_average: number; // Ortalama puan
+  // İhtiyaç duyulursa başka alanlar eklenebilir
+}
+
+/**
+ * Fetch movie details for a specific movie ID from the TMDB API.
+ * Reads the API key from the NEXT_PUBLIC_TMDB_API_KEY environment variable.
+ * @param tmdbId The TMDB ID of the movie to fetch details for.
+ * @returns A Promise containing the movie details or null in case of an error.
+ */
+export async function fetchTmdbMovieDetails(tmdbId: number): Promise<TmdbMovieDetails | null> {
+  // Get API key from environment variable
+  const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+
+  // If API key is missing, log an error and return null
+  if (!apiKey) {
+    console.error(
+      'TMDB API key (NEXT_PUBLIC_TMDB_API_KEY) not found. ' +
+      'Check your .env.local file and restart the server.'
+      );
+    return null;
+  }
+
+  // Construct the TMDB API endpoint URL (with English language option)
+  const url = `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${apiKey}&language=en-US`; // Changed language to en-US
+
+  try {
+    // Send the request to the API
+    const response = await fetch(url);
+
+    // If the response is not successful (e.g., 404, 401), log an error and return null
+    if (!response.ok) {
+      console.error(`TMDB API error (${url}): ${response.status} ${response.statusText}`);
+      // For more detailed error messages, response.json() could be checked
+      // const errorData = await response.json();
+      // console.error('TMDB Error Detail:', errorData);
+      return null;
+    }
+
+    // Parse the JSON response and type it according to the specified interface
+    const data: TmdbMovieDetails = await response.json();
+    
+    // Return the movie details on success
+    return data;
+
+  } catch (error) {
+    // Handle network errors or other fetch issues
+    console.error('An error occurred during the TMDB API request:', error);
+    return null;
+  }
 }

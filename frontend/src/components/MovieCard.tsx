@@ -1,62 +1,67 @@
 // frontend/src/components/MovieCard.tsx
 import Image from 'next/image'; // Image bileşenini import et
 
+// TMDB afişleri için temel URL (next.config.js'de tanımlı domain)
+const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+
 // Bileşenin alacağı prop'ların tiplerini tanımlayalım
 // Backend'den gelen verilere göre bu tipler daha sonra detaylandırılabilir
-type MovieCardProps = {
-  movieId: number;
+interface MovieCardProps {
+  // movieId: number; // MovieLens ID - Artık gerekli değil
+  tmdbId: number | null; // TMDB ID
   title: string;
   genres: string; // Türler genellikle '|' ile ayrılmış string olarak geliyor
   posterUrl: string | null; // posterUrl prop'u eklendi
-};
+  onClick: (tmdbId: number) => void; // Tıklama olayını dışarıdan almak için prop (TMDB ID ile çalışacak)
+}
 
-export default function MovieCard({ movieId, title, genres, posterUrl }: MovieCardProps) {
-  // Türler string'ini '|' karakterinden ayırıp bir listeye dönüştürelim
-  const genreList = genres ? genres.split('|') : [];
+const MovieCard: React.FC<MovieCardProps> = ({ /* movieId, */ tmdbId, title, genres, posterUrl, onClick }) => {
+  // Tam afiş URL'sini oluştur
+  const fullPosterUrl = posterUrl 
+    ? `${TMDB_IMAGE_BASE_URL}${posterUrl}` 
+    : '/images/default-poster.png'; // Varsayılan afiş yolu
+
+  // Türleri formatla (İngilizce için | ayıracı yeterli)
+  const formattedGenres = genres.split('|').join(' | ');
+
+  const handleCardClick = () => {
+    if (tmdbId) { // Sadece TMDB ID varsa tıklama işlevini çalıştır
+      onClick(tmdbId);
+    }
+  };
 
   return (
-    // Kartın genel yapısını biraz değiştirelim: Afiş üstte, içerik altta
-    <div className="bg-white/5 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden border border-white/10 text-white flex flex-col h-full group transition-all duration-300 hover:border-white/30 hover:shadow-yellow-500/20">
-      {/* Afiş Alanı */}
-      <div className="relative w-full h-64 sm:h-72 md:h-80"> 
-        {posterUrl ? (
-          <Image
-            src={posterUrl}
-            alt={`${title} Afişi`}
-            fill // Konteyneri doldurması için
-            style={{ objectFit: 'cover' }} // Resmin oranını koruyarak kaplaması için
-            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw" // Farklı ekran boyutları için optimizasyon
-            className="transition-transform duration-300 group-hover:scale-105" // Hover efekti
-            priority={false} // İlk yüklenenler dışındakiler için false daha iyi
-          />
-        ) : (
-          // Afiş yoksa yer tutucu göster
-          <div className="w-full h-full flex items-center justify-center bg-gray-700/50">
-            <span className="text-gray-400 text-sm">Afiş Yok</span>
-          </div>
-        )}
+    <div 
+      className={`bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-yellow-500/30 transition-shadow duration-300 flex flex-col h-full ${tmdbId ? 'cursor-pointer' : 'cursor-default'}`} // TMDB ID yoksa cursor değişmesin
+      onClick={handleCardClick} // Tıklandığında dışarıya bildir
+    >
+      <div className="relative w-full h-64 sm:h-72 md:h-80"> {/* Yüksekliği sabit tut */}
+        <Image
+          src={fullPosterUrl}
+          alt={`${title} poster`}
+          layout="fill" // layout="fill" ebeveyn elementin boyutlarına uyar
+          objectFit="cover" // Görüntüyü kırparak alanı doldurur
+          className={`transition-transform duration-300 ${tmdbId ? 'hover:scale-105' : ''}`} // TMDB ID yoksa büyütme efekti olmasın
+          priority={false} // İlk yüklenenler dışındakiler için false olabilir
+          // Hata durumunda veya yüklenirken gösterilecek placeholder
+          // placeholder="blur" 
+          // blurDataURL="/images/placeholder-blur.png" // Küçük boyutlu bulanık bir resim
+          unoptimized={posterUrl === null} // Eğer varsayılan afişse optimizasyonu kapat (isteğe bağlı)
+        />
       </div>
-
-      {/* İçerik Alanı */}
-      <div className="p-4 flex flex-col flex-grow"> 
-        <h3 className="text-base font-semibold mb-1 truncate" title={title}>
+      <div className="p-4 flex flex-col flex-grow"> {/* Metin alanı, kalan yüksekliği doldurur */}
+        <h3 className="text-lg font-semibold text-yellow-500 mb-1 truncate" title={title}> {/* Uzun başlıkları kısalt */}
           {title}
         </h3>
-        
-        <div className="text-xs text-gray-400 mb-3 space-x-1 flex-wrap"> {/* flex-wrap eklendi */}
-          {genreList.slice(0, 3).map((genre) => ( // Çok fazla türü engellemek için slice(0, 3)
-            <span key={genre} className="bg-gray-600/60 px-2 py-0.5 rounded-full inline-block mb-1">
-              {genre}
-            </span>
-          ))}
-          {genreList.length === 0 && <span className="italic">Tür belirtilmemiş</span>}
-        </div>
-
-        {/* Puanlama Alanı (Aşağı itmek için mt-auto) */}
-        <div className="mt-auto pt-3 border-t border-white/10">
-          <p className="text-sm text-gray-400">Puanlama Yakında...</p>
-        </div>
+        <p className="text-xs text-gray-400 flex-grow"> {/* Türler, kalan alanı doldurur */}
+          {formattedGenres || 'N/A'} {/* Tür yoksa N/A yaz */}
+        </p>
+        {!tmdbId && (
+           <p className="text-xs text-red-500 mt-1">Details unavailable</p> // TMDB ID yoksa uyarı
+        )}
       </div>
     </div>
   );
-} 
+};
+
+export default MovieCard; 

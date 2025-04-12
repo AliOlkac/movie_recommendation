@@ -141,7 +141,7 @@ def get_tmdb_poster_path(tmdb_id):
         return tmdb_poster_cache[tmdb_id]
     
     # print(f"Cache miss for tmdbId: {tmdb_id}, fetching from TMDB...") # Debug
-    tmdb_url = f"{TMDB_BASE_URL}/movie/{tmdb_id}?api_key={TMDB_API_KEY}&language=tr-TR"
+    tmdb_url = f"{TMDB_BASE_URL}/movie/{tmdb_id}?api_key={TMDB_API_KEY}&language=en-US"
     poster_path = None
     try:
         tmdb_response = requests.get(tmdb_url, timeout=2)
@@ -151,10 +151,10 @@ def get_tmdb_poster_path(tmdb_id):
         tmdb_poster_cache[tmdb_id] = poster_path # Cache'e ekle
         # time.sleep(0.05) # Gerekirse rate limit için bekleme
     except requests.exceptions.RequestException as tmdb_err:
-        print(f"UYARI: TMDB API isteği başarısız (get_tmdb_poster_path, tmdbId: {tmdb_id}): {tmdb_err}")
+        print(f"WARNING: TMDB API request failed (get_tmdb_poster_path, tmdbId: {tmdb_id}): {tmdb_err}")
         tmdb_poster_cache[tmdb_id] = None # Başarısız olsa da cache'e ekle (tekrar denememek için)
     except Exception as e:
-        print(f"UYARI: TMDB verisi işlenirken hata (get_tmdb_poster_path, tmdbId: {tmdb_id}): {e}")
+        print(f"WARNING: Error processing TMDB data (get_tmdb_poster_path, tmdbId: {tmdb_id}): {e}")
         tmdb_poster_cache[tmdb_id] = None
     return poster_path
 # ----------------------------------------------------------------
@@ -202,11 +202,12 @@ def get_movies():
         # Sayfalanmış veriyi al
         paginated_movies_df = filtered_movies_df.iloc[start_index:end_index]
 
-        # TMDB verilerini ekle (önceki gibi)
+        # TMDB verilerini ekle
         movies_list = []
         for index, row in paginated_movies_df.iterrows():
             movie_data = row.to_dict()
             tmdb_id = movie_id_to_tmdb_id.get(movie_data['movieId'])
+            movie_data['tmdbId'] = tmdb_id
             poster_url = None
             if tmdb_id:
                 poster_path = get_tmdb_poster_path(tmdb_id) # Yardımcı fonksiyonu kullan
@@ -251,7 +252,7 @@ def get_movie_details(movie_id):
 
         if tmdb_id:
             # TMDB'den detayları ve poster path'i alalım
-            tmdb_url = f"{TMDB_BASE_URL}/movie/{tmdb_id}?api_key={TMDB_API_KEY}&language=tr-TR"
+            tmdb_url = f"{TMDB_BASE_URL}/movie/{tmdb_id}?api_key={TMDB_API_KEY}&language=en"
             try:
                 tmdb_response = requests.get(tmdb_url, timeout=2)
                 tmdb_response.raise_for_status()
@@ -263,9 +264,9 @@ def get_movie_details(movie_id):
                 vote_average = tmdb_data.get('vote_average')
                 release_date = tmdb_data.get('release_date')
             except requests.exceptions.RequestException as tmdb_err:
-                 print(f"UYARI: TMDB API isteği başarısız (detay, tmdbId: {tmdb_id}): {tmdb_err}")
+                print(f"WARNING: TMDB API request failed (details, tmdbId: {tmdb_id}): {tmdb_err}")
             except Exception as e:
-                 print(f"UYARI: TMDB verisi işlenirken hata (detay, tmdbId: {tmdb_id}): {e}")
+                print(f"WARNING: Error processing TMDB data (details, tmdbId: {tmdb_id}): {e}")
 
         # Yanıta ek bilgileri ekle
         movie_details['posterUrl'] = poster_url
