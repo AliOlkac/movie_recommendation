@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Movie } from '@/lib/api'; // Film tipi için
-import { FaTimes, FaStar } from 'react-icons/fa'; // İkonlar
+import { FaTimes, FaStar, FaTrash } from 'react-icons/fa'; // İkonlar
 
 // TMDB image base URL
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w200'; // Daha küçük resimler için w200
@@ -17,13 +17,15 @@ interface RatedMoviesPanelProps {
   onClose: () => void; // Paneli kapatma fonksiyonu
   ratings: UserRatings; // Kullanıcının verdiği puanlar {tmdbId: rating}
   movies: Movie[]; // Ana film listesi (detayları bulmak için)
+  onRemoveRating: (tmdbId: number) => void; // Yeni prop eklendi
 }
 
 const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({ 
   isOpen, 
   onClose, 
   ratings, 
-  movies 
+  movies, 
+  onRemoveRating // Yeni prop alındı
 }) => {
   if (!isOpen) {
     return null; // Panel kapalıysa render etme
@@ -65,7 +67,7 @@ const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({
       {ratedMovies.length > 0 ? (
         <ul className="space-y-4">
           {ratedMovies.map((movie) => (
-            <li key={movie.tmdbId} className="flex items-start space-x-3 bg-black/30 backdrop-blur-sm rounded-lg overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-300">
+            <li key={movie.tmdbId} className="flex items-start space-x-3 bg-black/30 backdrop-blur-sm rounded-lg overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-300 relative group">
               {/* Küçük Afiş */}
               <div className="flex-shrink-0 w-16 h-24 relative">
                 <Image
@@ -76,7 +78,7 @@ const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({
                 />
               </div>
               {/* Film Bilgisi ve Puan */}
-              <div className="flex-grow min-w-0 p-2"> {/* min-w-0 taşmayı önler */}
+              <div className="flex-grow min-w-0 p-2 pr-8"> {/* Sağdan boşluk eklendi */}
                 <h3 className="text-sm font-medium text-white truncate" title={movie.title}>
                   {movie.title}
                 </h3>
@@ -89,6 +91,20 @@ const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({
                   <span className="text-xs text-white/50 ml-1">/ 5</span>
                 </div>
               </div>
+              {/* Remove Button */}
+              <button
+                onClick={() => {
+                  // Ensure tmdbId is valid before calling
+                  if (movie && typeof movie.tmdbId === 'number') {
+                    onRemoveRating(movie.tmdbId);
+                  }
+                }}
+                className="absolute top-2 right-2 text-white/40 hover:text-red-500 bg-black/20 hover:bg-black/40 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                aria-label={`Remove rating for ${movie.title}`}
+                title="Remove Rating"
+              >
+                <FaTrash size={12} />
+              </button>
             </li>
           ))}
         </ul>

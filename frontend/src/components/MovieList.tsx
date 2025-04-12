@@ -6,15 +6,22 @@ import MovieCard from './MovieCard';
 import SearchBar from './SearchBar';
 import MovieModal from './MovieModal';
 import RatedMoviesPanel from './RatedMoviesPanel';
+import FavoritesPanel from './FavoritesPanel';
 import { debounce } from 'lodash';
-import { FaStar } from 'react-icons/fa';
+import { FaStar, FaHeart } from 'react-icons/fa';
 
 // localStorage anahtarı
-const RATINGS_STORAGE_KEY = 'nextfilms_user_ratings';
+const RATINGS_STORAGE_KEY = 'movieRatings';
+const FAVORITES_STORAGE_KEY = 'movieFavorites';
 
 // User ratings type definition
 interface UserRatings {
   [tmdbId: number]: number; // Use tmdbId as the key
+}
+
+// Favorites type definition
+interface Favorites {
+  [tmdbId: number]: boolean; // true if favorited
 }
 
 // localStorage'dan güvenli okuma fonksiyonu
@@ -32,6 +39,17 @@ const loadRatingsFromStorage = (): UserRatings => {
   }
 };
 
+const loadFavoritesFromStorage = (): Favorites => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const storedFavorites = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    return storedFavorites ? JSON.parse(storedFavorites) : {};
+  } catch (error) {
+    console.error("Error reading favorites from localStorage:", error);
+    return {};
+  }
+};
+
 // localStorage'a güvenli yazma fonksiyonu
 const saveRatingsToStorage = (ratings: UserRatings) => {
   if (typeof window === 'undefined') {
@@ -44,15 +62,25 @@ const saveRatingsToStorage = (ratings: UserRatings) => {
   }
 };
 
+const saveFavoritesToStorage = (favorites: Favorites) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
+  } catch (error) {
+    console.error("Error saving favorites to localStorage:", error);
+  }
+};
+
 export default function MovieList() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTmdbId, setSelectedTmdbId] = useState<number | null>(null); // Renamed state
-  // userRatings state'ini localStorage'dan okuyarak başlat
+  const [selectedTmdbId, setSelectedTmdbId] = useState<number | null>(null);
   const [userRatings, setUserRatings] = useState<UserRatings>(() => loadRatingsFromStorage());
-  const [isPanelOpen, setIsPanelOpen] = useState(false); // State for panel visibility
+  const [isRatingsPanelOpen, setIsRatingsPanelOpen] = useState(false);
+  const [userFavorites, setUserFavorites] = useState<Favorites>(() => loadFavoritesFromStorage());
+  const [isFavoritesPanelOpen, setIsFavoritesPanelOpen] = useState(false);
 
   // Fetch movie data function
   const loadMovies = useCallback(async (term: string) => {
@@ -96,8 +124,8 @@ export default function MovieList() {
   };
 
   // Open modal when a movie card is clicked
-  const handleCardClick = (tmdbId: number) => { // Expects tmdbId now
-    setSelectedTmdbId(tmdbId); // Set the correct state
+  const handleCardClick = (tmdbId: number) => {
+    setSelectedTmdbId(tmdbId);
   };
 
   // Close the modal
@@ -106,40 +134,88 @@ export default function MovieList() {
   };
 
   // Process rating submitted from the modal
-  const handleRateMovie = (tmdbId: number, rating: number) => { // Expects tmdbId
-    // Yeni puanlar objesini oluştur
+  const handleRateMovie = (tmdbId: number, rating: number) => {
     const newRatings = {
         ...userRatings,
         [tmdbId]: rating,
     };
-    // State'i güncelle
     setUserRatings(newRatings);
-    // localStorage'ı güncelle
     saveRatingsToStorage(newRatings); 
     console.log("Current Ratings (saved):", newRatings); 
-    // TODO: Persist these ratings (localStorage, Context, backend etc.)
-    // Let's not close the modal immediately, so user can see changes.
-    // handleCloseModal(); // Can be uncommented to auto-close after rating.
+  };
+
+  // Favorite handler
+  const toggleFavorite = (tmdbId: number) => {
+    setUserFavorites(prevFavorites => {
+      const newFavorites = { ...prevFavorites };
+      if (newFavorites[tmdbId]) {
+        delete newFavorites[tmdbId];
+      } else {
+        newFavorites[tmdbId] = true;
+      }
+      saveFavoritesToStorage(newFavorites);
+      return newFavorites;
+    });
   };
 
   // Panel toggle functions
-  const openPanel = () => setIsPanelOpen(true);
-  const closePanel = () => setIsPanelOpen(false);
+  const openRatingsPanel = () => setIsRatingsPanelOpen(true);
+  const closeRatingsPanel = () => setIsRatingsPanelOpen(false);
+  const openFavoritesPanel = () => setIsFavoritesPanelOpen(true);
+  const closeFavoritesPanel = () => setIsFavoritesPanelOpen(false);
 
   // Calculate number of rated movies for the button badge
   const ratedMoviesCount = Object.keys(userRatings).length;
+  const favoriteMoviesCount = Object.keys(userFavorites).length;
+
+  // Function to handle rating changes
+  const handleRatingChange = (tmdbId: number, rating: number | null) => {
+    setUserRatings(prevRatings => {
+      const newRatings = { ...prevRatings };
+      if (rating === null || rating === 0) {
+        delete newRatings[tmdbId];
+      } else {
+        newRatings[tmdbId] = rating;
+      }
+      saveRatingsToStorage(newRatings); // Save to localStorage
+      return newRatings;
+    });
+  };
+
+  // Function to remove a rating
+  const removeRating = (tmdbId: number) => {
+    setUserRatings(prevRatings => {
+      const newRatings = { ...prevRatings };
+      delete newRatings[tmdbId];
+      saveRatingsToStorage(newRatings); // Save to localStorage
+      return newRatings;
+    });
+  };
 
   return (
     <div className="relative min-h-screen">
       
-      {/* Button to Open Rated Movies Panel (Fixed Position) */}
+      {/* Button to Open Favorites Panel (Fixed Position - Left) */}
       <button
-        onClick={openPanel}
+        onClick={openFavoritesPanel}
+        className="fixed top-20 left-4 z-30 bg-pink-600 hover:bg-pink-700 text-white p-3 rounded-full shadow-lg transition-colors duration-300"
+        aria-label="Open favorite movies panel"
+      >
+         <FaHeart size={20} />
+         {favoriteMoviesCount > 0 && (
+           <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+             {favoriteMoviesCount}
+           </span>
+         )}
+      </button>
+
+      {/* Button to Open Rated Movies Panel (Fixed Position - Right) - Renamed onClick */}
+      <button
+        onClick={openRatingsPanel}
         className="fixed top-20 right-4 z-30 bg-yellow-500 hover:bg-yellow-600 text-gray-900 p-3 rounded-full shadow-lg transition-colors duration-300"
         aria-label="Open rated movies panel"
       >
          <FaStar size={20} />
-         {/* Badge for rated movie count */} 
          {ratedMoviesCount > 0 && (
            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
              {ratedMoviesCount}
@@ -163,7 +239,6 @@ export default function MovieList() {
           {movies.map((movie) => (
             <MovieCard
               key={movie.movieId} // Still use movieId for React key, as it's unique in our list
-              // movieId={movie.movieId} // Pass movieId if needed elsewhere
               tmdbId={movie.tmdbId} // Pass tmdbId
               title={movie.title}
               genres={movie.genres}
@@ -184,19 +259,30 @@ export default function MovieList() {
 
       {/* Movie Detail Modal */}
       <MovieModal 
-        tmdbId={selectedTmdbId} // Pass the selected tmdbId to the modal
-        onClose={handleCloseModal} // Pass the close handler
-        onRate={handleRateMovie} // Pass the rating handler
-        // Modal'a mevcut puanı da iletelim ki gösterebilsin
+        tmdbId={selectedTmdbId}
+        onClose={handleCloseModal}
+        onRate={handleRateMovie} 
         initialRating={selectedTmdbId ? userRatings[selectedTmdbId] : 0} 
+        isFavorite={selectedTmdbId ? !!userFavorites[selectedTmdbId] : false}
+        onToggleFavorite={toggleFavorite}
       />
 
-      {/* Rated Movies Panel */}
+      {/* Rated Movies Panel - Renamed props */}
       <RatedMoviesPanel 
-        isOpen={isPanelOpen}
-        onClose={closePanel}
+        isOpen={isRatingsPanelOpen}
+        onClose={closeRatingsPanel}
         ratings={userRatings}
-        movies={movies} // Pass the main movie list to find details
+        movies={movies}
+        onRemoveRating={removeRating}
+      />
+
+      {/* Favorites Panel */}
+      <FavoritesPanel
+        isOpen={isFavoritesPanelOpen}
+        onClose={closeFavoritesPanel}
+        favorites={userFavorites}
+        movies={movies}
+        onToggleFavorite={toggleFavorite}
       />
     </div>
   );

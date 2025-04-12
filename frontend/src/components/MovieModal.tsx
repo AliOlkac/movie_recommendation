@@ -1,153 +1,170 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { fetchTmdbMovieDetails, TmdbMovieDetails } from '@/lib/api'; // TMDB detaylarını çeken fonksiyonu ve tipi import et
-import RatingStars from './RatingStars'; // Yıldız bileşenini import et
-import { FaTimes } from 'react-icons/fa'; // Kapatma ikonu için
+import { fetchTmdbMovieDetails, TmdbMovieDetails } from '@/lib/api';
+import RatingStars from './RatingStars'; // Ensure this path is correct
+import { FaTimes, FaHeart, FaRegHeart } from 'react-icons/fa'; // Add FaHeart and FaRegHeart
 
-// TMDB'den gelen afiş yolları için temel URL
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'; 
+// TMDB image base URL
+const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'; // Larger image for modal
 
 interface MovieModalProps {
-  tmdbId: number | null; // Expect tmdbId now
-  onClose: () => void; // Modal kapatıldığında çağrılacak fonksiyon
-  onRate: (tmdbId: number, rating: number) => void; // Expect tmdbId
-  initialRating?: number; // Add optional initialRating prop
+  tmdbId: number | null;
+  onClose: () => void;
+  onRate: (tmdbId: number, rating: number) => void; // Ensure this is used correctly
+  initialRating?: number; // Make initialRating optional, default to 0 if not provided
+  isFavorite: boolean; // Add isFavorite prop
+  onToggleFavorite: (tmdbId: number) => void; // Add favorite toggle handler
 }
 
-const MovieModal: React.FC<MovieModalProps> = ({ tmdbId, onClose, onRate, initialRating = 0 }) => {
-  // Film detaylarını tutmak için state
+const MovieModal: React.FC<MovieModalProps> = ({ 
+  tmdbId, 
+  onClose, 
+  onRate, 
+  initialRating = 0, // Default to 0 if not provided
+  isFavorite, 
+  onToggleFavorite 
+}) => {
   const [movieDetails, setMovieDetails] = useState<TmdbMovieDetails | null>(null);
-  // Yüklenme durumunu tutmak için state
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  // Hata durumunu tutmak için state
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Kullanıcının seçtiği puanı tutmak için state
-  const [currentRating, setCurrentRating] = useState<number>(initialRating);
-
-  // Runs when tmdbId changes (modal opens or movie changes)
-  useEffect(() => {
-    // If a tmdbId exists (modal is opening)
+  // Initialize currentRating with initialRating from props
+  // Rename handleRatingChange from MovieList as it conflicts here
+  const handleRatingSubmit = (newRating: number) => {
     if (tmdbId) {
-      // Clear previous data and set loading state
-      setMovieDetails(null);
-      setError(null);
-      // Reset rating state based on the prop passed for the *new* movie
-      // Important: Use the initialRating coming from props for the selected movie
-      setCurrentRating(initialRating); 
-      setIsLoading(true);
+      onRate(tmdbId, newRating); // Call the onRate passed from MovieList
+    }
+  };
 
-      // Fetch movie details asynchronously from TMDB
+  // Handle clicking the favorite button
+  const handleFavoriteClick = () => {
+    if (tmdbId) {
+      onToggleFavorite(tmdbId);
+    }
+  };
+
+  useEffect(() => {
+    if (tmdbId !== null) {
       const loadDetails = async () => {
-        const details = await fetchTmdbMovieDetails(tmdbId); // Use tmdbId for API call
-        if (details) {
-          setMovieDetails(details); // Save details to state
-        } else {
-          setError('Failed to load movie details.'); // Set error message (English)
+        setLoading(true);
+        setError(null);
+        setMovieDetails(null); // Clear previous details
+        try {
+          const details = await fetchTmdbMovieDetails(tmdbId);
+          setMovieDetails(details);
+        } catch (err) {
+          console.error("Error fetching movie details:", err);
+          setError('Failed to load movie details.');
+        } finally {
+          setLoading(false);
         }
-        setIsLoading(false); // Loading finished
       };
       loadDetails();
+    } else {
+      // Reset state if tmdbId becomes null (modal closed)
+      setMovieDetails(null);
+      setLoading(false);
+      setError(null);
     }
-  }, [tmdbId, initialRating]); // Add initialRating to dependency array
+  }, [tmdbId]);
 
-  // Modal kapalıysa hiçbir şey render etme
-  if (!tmdbId) {
+  // Prevent rendering if tmdbId is null (modal is not open)
+  if (tmdbId === null) {
     return null;
   }
 
-  // Yıldızlardan gelen puan değişimini yakala
-  const handleRatingChange = (rating: number) => {
-    // Update local state (optional, as RatingStars also holds state)
-    setCurrentRating(rating); 
-    // Notify the parent component about the rating
-    onRate(tmdbId, rating); // Send tmdbId and rating
-    console.log(`Movie TMDB ID: ${tmdbId}, Rating: ${rating}`); // Log to console
-    // İsteğe bağlı: Puan verdikten sonra modalı otomatik kapatabiliriz
-    // onClose();
-  };
-
-  // Modal içeriğini oluştur
   return (
-    // Semi-transparent modal backdrop with blur effect
+    // Modal Backdrop
     <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity duration-300"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" 
+      onClick={onClose} // Close modal on backdrop click
+      style={{ backdropFilter: 'blur(6px)' }} // Consistent blur
     >
-      {/* Modal content with glassmorphism effect */}
+      {/* Modal Content - Prevent closing when clicking inside */}
       <div 
-        className="relative bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl text-white max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6"
-        onClick={(e) => e.stopPropagation()}
-        style={{ backdropFilter: 'blur(12px)' }} // Ensure blur works in all browsers
+        className="bg-white/10 backdrop-blur-md rounded-lg shadow-xl max-w-3xl w-full overflow-hidden relative border border-white/20" 
+        onClick={(e) => e.stopPropagation()} // Prevents modal close on content click
+        style={{ backdropFilter: 'blur(16px)' }}
       >
-        {/* Close Button - repositioned and styled */}
+        {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/30 hover:bg-black/50 rounded-full p-2 transition-colors"
-          aria-label="Close"
+          className="absolute top-3 right-3 text-white/60 hover:text-white bg-black/30 hover:bg-black/50 rounded-full p-2 transition-colors z-10"
+          aria-label="Close modal"
         >
-          <FaTimes size={16} />
+          <FaTimes size={18} />
         </button>
 
-        {/* Loading and Error States */}
-        {isLoading && (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-pulse text-yellow-400 text-lg">Loading...</div>
-          </div>
-        )}
-        
-        {error && (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-red-400 text-lg">{error}</div>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center h-96">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
           </div>
         )}
 
-        {/* Movie Details with Enhanced Styling */}
-        {movieDetails && !isLoading && !error && (
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Poster with shadow and animation */}
-            <div className="flex-shrink-0 w-full md:w-2/5 transform transition-transform duration-500 hover:scale-105">
-              <div className="relative rounded-lg overflow-hidden shadow-2xl aspect-[2/3]">
-                <Image
-                  src={movieDetails.poster_path ? `${TMDB_IMAGE_BASE_URL}${movieDetails.poster_path}` : '/images/default-poster.png'}
-                  alt={`${movieDetails.title} poster`}
-                  layout="fill"
-                  objectFit="cover"
-                  className="rounded-lg"
-                  priority
-                />
-              </div>
+        {/* Error State */}
+        {error && !loading && (
+          <div className="flex flex-col justify-center items-center h-96 text-center p-6">
+            <p className="text-red-400 text-lg mb-4">{error}</p>
+            <button 
+              onClick={onClose}
+              className="bg-yellow-500 text-gray-900 px-4 py-2 rounded hover:bg-yellow-600 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        )}
+
+        {/* Content: Movie Details */}
+        {!loading && !error && movieDetails && (
+          <div className="flex flex-col md:flex-row">
+            {/* Left Side: Poster */}
+            <div className="md:w-1/3 flex-shrink-0 bg-black/20">
+              <Image 
+                src={movieDetails.poster_path ? `${TMDB_IMAGE_BASE_URL}${movieDetails.poster_path}` : '/images/default-poster.png'}
+                alt={`${movieDetails.title} Poster`}
+                width={500}
+                height={750}
+                className="w-full h-auto object-cover md:rounded-l-lg"
+                priority // Prioritize loading the poster image
+              />
             </div>
-            
-            {/* Movie Info with enhanced typography */}
-            <div className="flex-grow flex flex-col">
-              <h2 className="text-4xl font-bold text-white mb-2">
-                {movieDetails.title}
-              </h2>
-              
-              <div className="flex items-center space-x-2 text-sm text-white/70 mb-4">
-                <span>{movieDetails.release_date ? new Date(movieDetails.release_date).getFullYear() : 'Unknown'}</span>
-                <span>•</span>
-                <span>TMDB: {movieDetails.vote_average.toFixed(1)}/10</span>
+
+            {/* Right Side: Details, Rating, Favorite */}
+            <div className="md:w-2/3 p-6 md:p-8 text-white flex flex-col justify-between">
+              <div>
+                {/* Title and Year */}
+                <h2 className="text-3xl font-bold mb-2">{movieDetails.title} ({movieDetails.release_date ? new Date(movieDetails.release_date).getFullYear() : 'N/A'})</h2>
+                {/* Genres */}
+                <p className="text-sm text-white/70 mb-4">
+                  {movieDetails.genres?.map((g: { id: number; name: string }) => g.name).join(', ') || 'No genres listed'}
+                </p>
+                {/* Overview */}
+                <p className="text-base text-white/90 mb-6">
+                  {movieDetails.overview || 'No overview available.'}
+                </p>
               </div>
               
-              <h3 className="text-xl font-semibold mb-2 text-white/90">Overview</h3>
-              <p className="text-white/80 mb-6 text-sm leading-relaxed">
-                {movieDetails.overview || 'Overview not available.'}
-              </p>
-              
-              <div className="mt-auto">
-                <h3 className="text-xl font-semibold mb-3 text-white/90">Rate This Movie</h3>
-                <div className="flex items-center space-x-3">
+              {/* Rating and Favorite Section */}
+              <div className="mt-auto flex items-center justify-between pt-6 border-t border-white/20">
+                {/* Rating Stars */}
+                <div className="flex flex-col items-start">
+                  <span className="text-sm text-white/70 mb-1">Your Rating:</span>
                   <RatingStars 
-                    onRatingChange={handleRatingChange}
-                    initialRating={initialRating}
+                    initialRating={initialRating} 
+                    onRatingChange={handleRatingSubmit} // Use the renamed handler
                   />
-                  {currentRating > 0 && (
-                    <span className="text-yellow-400 font-semibold">{currentRating} Star{currentRating > 1 ? 's' : ''}</span>
-                  )}
                 </div>
+                {/* Favorite Button */}
+                <button
+                  onClick={handleFavoriteClick}
+                  className={`p-3 rounded-full transition-colors duration-200 ${isFavorite ? 'bg-pink-600/30 text-pink-400 hover:bg-pink-600/50' : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-pink-400'}`}
+                  aria-label={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                  title={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                >
+                  {isFavorite ? <FaHeart size={20} /> : <FaRegHeart size={20} />}
+                </button>
               </div>
             </div>
           </div>

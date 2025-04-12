@@ -86,6 +86,7 @@ export interface TmdbMovieDetails {
   poster_path: string | null; // Afiş yolu (base URL eklenmeli)
   release_date: string; // Yayın tarihi
   vote_average: number; // Ortalama puan
+  genres: { id: number; name: string }[]; // Genres alanı eklendi (dizi olarak)
   // İhtiyaç duyulursa başka alanlar eklenebilir
 }
 
