@@ -44,19 +44,20 @@ const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({
   ratedMovies.sort((a, b) => b.rating - a.rating); 
 
   return (
+    // Glassmorphism panel
     <div 
-      // Sağ panel stili
-      className={`fixed top-0 right-0 h-full w-80 bg-gray-900 shadow-lg z-40 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'} p-4 overflow-y-auto`}
+      className={`fixed top-0 right-0 h-full w-80 bg-white/10 backdrop-blur-md border-l border-white/20 shadow-lg z-40 transform transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'} p-4 overflow-y-auto`}
+      style={{ backdropFilter: 'blur(12px)' }} // Ensure blur works in all browsers
     >
       {/* Panel Başlığı ve Kapatma Butonu */}
-      <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-700">
-        <h2 className="text-xl font-semibold text-yellow-500">Rated Movies</h2>
+      <div className="flex justify-between items-center mb-6 pb-2 border-b border-white/20">
+        <h2 className="text-xl font-semibold text-white">Rated Movies</h2>
         <button 
           onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors"
+          className="text-white/70 hover:text-white bg-black/30 hover:bg-black/50 rounded-full p-2 transition-colors"
           aria-label="Close Panel"
         >
-          <FaTimes size={20} />
+          <FaTimes size={16} />
         </button>
       </div>
 
@@ -64,7 +65,7 @@ const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({
       {ratedMovies.length > 0 ? (
         <ul className="space-y-4">
           {ratedMovies.map((movie) => (
-            <li key={movie.tmdbId} className="flex items-start space-x-3 bg-gray-800 p-2 rounded-md">
+            <li key={movie.tmdbId} className="flex items-start space-x-3 bg-black/30 backdrop-blur-sm rounded-lg overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-300">
               {/* Küçük Afiş */}
               <div className="flex-shrink-0 w-16 h-24 relative">
                 <Image
@@ -72,37 +73,35 @@ const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({
                   alt={`${movie.title} poster`}
                   layout="fill"
                   objectFit="cover"
-                  className="rounded"
                 />
               </div>
               {/* Film Bilgisi ve Puan */}
-              <div className="flex-grow min-w-0"> {/* min-w-0 taşmayı önler */}
+              <div className="flex-grow min-w-0 p-2"> {/* min-w-0 taşmayı önler */}
                 <h3 className="text-sm font-medium text-white truncate" title={movie.title}>
                   {movie.title}
                 </h3>
-                <p className="text-xs text-gray-400 truncate" title={movie.genres.split('|').join(', ')}>
+                <p className="text-xs text-white/70 truncate" title={movie.genres.split('|').join(', ')}>
                   {movie.genres.split('|').join(', ')}
                 </p>
-                <div className="flex items-center mt-1 text-yellow-500">
+                <div className="flex items-center mt-2 text-yellow-400">
                   <FaStar size={14} className="mr-1"/> 
                   <span className="text-sm font-bold">{movie.rating}</span>
-                  <span className="text-xs text-gray-500 ml-1">/ 5</span>
+                  <span className="text-xs text-white/50 ml-1">/ 5</span>
                 </div>
               </div>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-center text-gray-500 mt-10">You haven't rated any movies yet.</p>
+        <p className="text-center text-white/50 mt-10">You haven&apos;t rated any movies yet.</p>
       )}
 
       {/* TODO: "Recommend Movies" butonu (en az 5 puan varsa aktif) */}
        {ratedMovies.length >= 5 && (
            <button 
-             // onClick={handleRecommend} // Öneri fonksiyonu eklenecek
-             className="w-full mt-6 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-2 px-4 rounded transition-colors duration-300"
+             className="w-full mt-6 bg-gradient-to-r from-yellow-400 to-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-300"
            >
-             Get Recommendations!
+             Get Recommendations
            </button>
        )}
     </div>

@@ -70,69 +70,84 @@ const MovieModal: React.FC<MovieModalProps> = ({ tmdbId, onClose, onRate, initia
 
   // Modal içeriğini oluştur
   return (
-    // Modal arka planı (overlay)
+    // Semi-transparent modal backdrop with blur effect
     <div 
-      className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4"
-      onClick={onClose} // Arka plana tıklayınca kapat
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity duration-300"
+      onClick={onClose}
     >
-      {/* Modal içeriği (tıklayınca kapanmayı engelle) */}
+      {/* Modal content with glassmorphism effect */}
       <div 
-        className="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl relative text-white max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()} // İçeriğe tıklama arka plana yayılmasın
+        className="relative bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl text-white max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6"
+        onClick={(e) => e.stopPropagation()}
+        style={{ backdropFilter: 'blur(12px)' }} // Ensure blur works in all browsers
       >
-        {/* Kapatma Butonu */}
+        {/* Close Button - repositioned and styled */}
         <button 
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors"
-          aria-label="Close" // English
+          className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/30 hover:bg-black/50 rounded-full p-2 transition-colors"
+          aria-label="Close"
         >
-          <FaTimes size={20} />
+          <FaTimes size={16} />
         </button>
 
-        {/* Yükleniyor Durumu */}
-        {isLoading && <p className="text-center text-lg p-8">Loading...</p>} {/* English */}
+        {/* Loading and Error States */}
+        {isLoading && (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-pulse text-yellow-400 text-lg">Loading...</div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="flex justify-center items-center h-64">
+            <div className="text-red-400 text-lg">{error}</div>
+          </div>
+        )}
 
-        {/* Hata Durumu */}
-        {error && <p className="text-center text-red-500 text-lg p-8">{error}</p>}
-
-        {/* Film Detayları */}
+        {/* Movie Details with Enhanced Styling */}
         {movieDetails && !isLoading && !error && (
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Afiş */}
-            <div className="flex-shrink-0 w-full md:w-1/3">
-              <Image
-                src={movieDetails.poster_path ? `${TMDB_IMAGE_BASE_URL}${movieDetails.poster_path}` : '/images/default-poster.png'} // Varsayılan afiş eklenebilir
-                alt={`${movieDetails.title} poster`}
-                width={500}
-                height={750}
-                className="rounded-md w-full h-auto object-cover"
-                priority // Modal açıldığında önemli
-              />
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Poster with shadow and animation */}
+            <div className="flex-shrink-0 w-full md:w-2/5 transform transition-transform duration-500 hover:scale-105">
+              <div className="relative rounded-lg overflow-hidden shadow-2xl aspect-[2/3]">
+                <Image
+                  src={movieDetails.poster_path ? `${TMDB_IMAGE_BASE_URL}${movieDetails.poster_path}` : '/images/default-poster.png'}
+                  alt={`${movieDetails.title} poster`}
+                  layout="fill"
+                  objectFit="cover"
+                  className="rounded-lg"
+                  priority
+                />
+              </div>
             </div>
-            {/* Bilgiler */}
-            <div className="flex-grow">
-              <h2 className="text-3xl font-bold text-yellow-500 mb-3">{movieDetails.title}</h2>
-              <p className="text-sm text-gray-400 mb-4">
-                Release Date: {movieDetails.release_date ? new Date(movieDetails.release_date).toLocaleDateString('en-US') : 'Unknown'} | {/* English Date & Text */}
-                TMDB Rating: {movieDetails.vote_average.toFixed(1)}/10
-              </p>
-              <h3 className="text-xl font-semibold mb-2 border-b border-gray-600 pb-1">Overview</h3> {/* English */}
-              <p className="text-gray-300 mb-6 text-sm leading-relaxed">
-                {movieDetails.overview || 'Overview not available.'} {/* English */}
+            
+            {/* Movie Info with enhanced typography */}
+            <div className="flex-grow flex flex-col">
+              <h2 className="text-4xl font-bold text-white mb-2">
+                {movieDetails.title}
+              </h2>
+              
+              <div className="flex items-center space-x-2 text-sm text-white/70 mb-4">
+                <span>{movieDetails.release_date ? new Date(movieDetails.release_date).getFullYear() : 'Unknown'}</span>
+                <span>•</span>
+                <span>TMDB: {movieDetails.vote_average.toFixed(1)}/10</span>
+              </div>
+              
+              <h3 className="text-xl font-semibold mb-2 text-white/90">Overview</h3>
+              <p className="text-white/80 mb-6 text-sm leading-relaxed">
+                {movieDetails.overview || 'Overview not available.'}
               </p>
               
-              <h3 className="text-xl font-semibold mb-2 border-b border-gray-600 pb-1">Rate Movie</h3> {/* English */}
-              <div className="flex items-center space-x-3">
-                <RatingStars 
-                  onRatingChange={handleRatingChange} // Call handleRatingChange on rating change
-                  initialRating={initialRating} // Pass the initialRating prop down
-                />
-                {/* Display the rating from the RatingStars component's internal state 
-                    OR use the currentRating state from MovieModal if needed elsewhere here */} 
-                {/* We rely on RatingStars to display its current state visually */}
-                {/* {currentRating > 0 && ( 
-                  <span className="text-yellow-500 font-semibold">{currentRating} Star{currentRating > 1 ? 's' : ''}</span> 
-                )} */} 
+              <div className="mt-auto">
+                <h3 className="text-xl font-semibold mb-3 text-white/90">Rate This Movie</h3>
+                <div className="flex items-center space-x-3">
+                  <RatingStars 
+                    onRatingChange={handleRatingChange}
+                    initialRating={initialRating}
+                  />
+                  {currentRating > 0 && (
+                    <span className="text-yellow-400 font-semibold">{currentRating} Star{currentRating > 1 ? 's' : ''}</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>

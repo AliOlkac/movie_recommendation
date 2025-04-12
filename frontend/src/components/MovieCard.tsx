@@ -32,32 +32,32 @@ const MovieCard: React.FC<MovieCardProps> = ({ /* movieId, */ tmdbId, title, gen
 
   return (
     <div 
-      className={`bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-yellow-500/30 transition-shadow duration-300 flex flex-col h-full ${tmdbId ? 'cursor-pointer' : 'cursor-default'}`} // TMDB ID yoksa cursor değişmesin
-      onClick={handleCardClick} // Tıklandığında dışarıya bildir
+      className={`group relative overflow-hidden rounded-xl transition-all duration-300 ${tmdbId ? 'cursor-pointer' : 'cursor-default'}`}
+      onClick={handleCardClick}
+      style={{ aspectRatio: '2/3' }} // Poster oranını korumak için
     >
-      <div className="relative w-full h-64 sm:h-72 md:h-80"> {/* Yüksekliği sabit tut */}
+      {/* Afiş */}
+      <div className="w-full h-full">
         <Image
           src={fullPosterUrl}
           alt={`${title} poster`}
-          layout="fill" // layout="fill" ebeveyn elementin boyutlarına uyar
-          objectFit="cover" // Görüntüyü kırparak alanı doldurur
-          className={`transition-transform duration-300 ${tmdbId ? 'hover:scale-105' : ''}`} // TMDB ID yoksa büyütme efekti olmasın
-          priority={false} // İlk yüklenenler dışındakiler için false olabilir
-          // Hata durumunda veya yüklenirken gösterilecek placeholder
-          // placeholder="blur" 
-          // blurDataURL="/images/placeholder-blur.png" // Küçük boyutlu bulanık bir resim
-          unoptimized={posterUrl === null} // Eğer varsayılan afişse optimizasyonu kapat (isteğe bağlı)
+          layout="fill"
+          objectFit="cover" // Resmi kaplamasını sağlar
+          className={`transition-transform duration-500 ${tmdbId ? 'group-hover:scale-110' : ''}`} // Hover efekti
+          priority={false}
         />
       </div>
-      <div className="p-4 flex flex-col flex-grow"> {/* Metin alanı, kalan yüksekliği doldurur */}
-        <h3 className="text-lg font-semibold text-yellow-500 mb-1 truncate" title={title}> {/* Uzun başlıkları kısalt */}
+      
+      {/* Bilgi Overlay - Glassmorphism Efekti */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/40 backdrop-blur-sm backdrop-filter transition-all duration-300 translate-y-8 group-hover:translate-y-0">
+        <h3 className="text-lg font-semibold text-white mb-1 truncate" title={title}>
           {title}
         </h3>
-        <p className="text-xs text-gray-400 flex-grow"> {/* Türler, kalan alanı doldurur */}
-          {formattedGenres || 'N/A'} {/* Tür yoksa N/A yaz */}
+        <p className="text-xs text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-300 truncate" title={formattedGenres}>
+          {formattedGenres || 'N/A'}
         </p>
         {!tmdbId && (
-           <p className="text-xs text-red-500 mt-1">Details unavailable</p> // TMDB ID yoksa uyarı
+           <p className="text-xs text-red-400 mt-1">Details unavailable</p>
         )}
       </div>
     </div>
