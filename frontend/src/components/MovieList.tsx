@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { fetchMovies, Movie } from '@/lib/api';
+import { fetchMovies, Movie, fetchRecommendations } from '@/lib/api';
 import MovieCard from './MovieCard';
 import SearchBar from './SearchBar';
 import MovieModal from './MovieModal';
 import RatedMoviesPanel from './RatedMoviesPanel';
 import FavoritesPanel from './FavoritesPanel';
+import RecommendationsModal from './RecommendationsModal';
 import { debounce } from 'lodash';
 import { FaStar, FaHeart } from 'react-icons/fa';
 
@@ -81,6 +82,10 @@ export default function MovieList() {
   const [isRatingsPanelOpen, setIsRatingsPanelOpen] = useState(false);
   const [userFavorites, setUserFavorites] = useState<Favorites>(() => loadFavoritesFromStorage());
   const [isFavoritesPanelOpen, setIsFavoritesPanelOpen] = useState(false);
+  const [recommendedMovies, setRecommendedMovies] = useState<Movie[] | null>(null);
+  const [isRecModalOpen, setIsRecModalOpen] = useState(false);
+  const [isRecLoading, setIsRecLoading] = useState(false);
+  const [recError, setRecError] = useState<string | null>(null);
 
   // Fetch movie data function
   const loadMovies = useCallback(async (term: string) => {
@@ -168,20 +173,6 @@ export default function MovieList() {
   const ratedMoviesCount = Object.keys(userRatings).length;
   const favoriteMoviesCount = Object.keys(userFavorites).length;
 
-  // Function to handle rating changes
-  const handleRatingChange = (tmdbId: number, rating: number | null) => {
-    setUserRatings(prevRatings => {
-      const newRatings = { ...prevRatings };
-      if (rating === null || rating === 0) {
-        delete newRatings[tmdbId];
-      } else {
-        newRatings[tmdbId] = rating;
-      }
-      saveRatingsToStorage(newRatings); // Save to localStorage
-      return newRatings;
-    });
-  };
-
   // Function to remove a rating
   const removeRating = (tmdbId: number) => {
     setUserRatings(prevRatings => {
@@ -190,6 +181,36 @@ export default function MovieList() {
       saveRatingsToStorage(newRatings); // Save to localStorage
       return newRatings;
     });
+  };
+
+  // Recommendation Modal handler
+  const handleGetRecommendations = async () => {
+    // Close the ratings panel first
+    closeRatingsPanel(); 
+    setIsRecModalOpen(true); // Open the recommendations modal immediately
+    setIsRecLoading(true); // Set loading state
+    setRecError(null); // Clear previous errors
+    setRecommendedMovies(null); // Clear previous recommendations
+
+    console.log("Requesting recommendations with ratings:", userRatings);
+
+    const recommendations = await fetchRecommendations(userRatings);
+
+    if (recommendations) {
+      setRecommendedMovies(recommendations);
+      console.log("Recommendations received:", recommendations);
+    } else {
+      setRecError("Could not fetch recommendations. Please try again later.");
+      console.error("Failed to fetch recommendations from API.");
+    }
+    setIsRecLoading(false); // End loading state
+  };
+
+  const closeRecModal = () => {
+    setIsRecModalOpen(false);
+    // Optionally clear state when closing
+    // setRecommendedMovies(null);
+    // setRecError(null);
   };
 
   return (
@@ -267,13 +288,14 @@ export default function MovieList() {
         onToggleFavorite={toggleFavorite}
       />
 
-      {/* Rated Movies Panel - Renamed props */}
+      {/* Rated Movies Panel - Pass onGetRecommendations */}
       <RatedMoviesPanel 
-        isOpen={isRatingsPanelOpen}
-        onClose={closeRatingsPanel}
+        isOpen={isRatingsPanelOpen} 
+        onClose={closeRatingsPanel} 
         ratings={userRatings}
         movies={movies}
         onRemoveRating={removeRating}
+        onGetRecommendations={handleGetRecommendations} // Pass the handler
       />
 
       {/* Favorites Panel */}
@@ -283,6 +305,15 @@ export default function MovieList() {
         favorites={userFavorites}
         movies={movies}
         onToggleFavorite={toggleFavorite}
+      />
+
+      {/* Recommendations Modal */}
+      <RecommendationsModal
+        isOpen={isRecModalOpen}
+        onClose={closeRecModal}
+        recommendations={recommendedMovies}
+        isLoading={isRecLoading}
+        error={recError}
       />
     </div>
   );

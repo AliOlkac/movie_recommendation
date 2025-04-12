@@ -18,6 +18,7 @@ interface RatedMoviesPanelProps {
   ratings: UserRatings; // Kullanıcının verdiği puanlar {tmdbId: rating}
   movies: Movie[]; // Ana film listesi (detayları bulmak için)
   onRemoveRating: (tmdbId: number) => void; // Yeni prop eklendi
+  onGetRecommendations: () => void; // Add prop for recommendation request
 }
 
 const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({ 
@@ -25,7 +26,8 @@ const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({
   onClose, 
   ratings, 
   movies, 
-  onRemoveRating // Yeni prop alındı
+  onRemoveRating, 
+  onGetRecommendations // Receive the new prop
 }) => {
   if (!isOpen) {
     return null; // Panel kapalıysa render etme
@@ -112,9 +114,10 @@ const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({
         <p className="text-center text-white/50 mt-10">You haven&apos;t rated any movies yet.</p>
       )}
 
-      {/* TODO: "Recommend Movies" butonu (en az 5 puan varsa aktif) */}
+      {/* Recommendations Button */}
        {ratedMovies.length >= 5 && (
            <button 
+             onClick={onGetRecommendations} // Call the passed function
              className="w-full mt-6 bg-gradient-to-r from-yellow-400 to-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-300"
            >
              Get Recommendations

@@ -137,3 +137,53 @@ export async function fetchTmdbMovieDetails(tmdbId: number): Promise<TmdbMovieDe
     return null;
   }
 }
+
+// User ratings type definition (if not already defined, define it here)
+// It might be better defined centrally if used in multiple places.
+interface UserRatings {
+  [tmdbId: number]: number; 
+}
+
+/**
+ * Kullanıcının verdiği puanlara göre film önerileri getirir.
+ * @param ratings Kullanıcının verdiği puanlar ({ tmdbId: rating } formatında).
+ * @returns Önerilen film listesini (Movie[]) içeren bir Promise döndürür.
+ *          Hata durumunda null döner.
+ */
+export async function fetchRecommendations(ratings: UserRatings): Promise<Movie[] | null> {
+  const url = `${API_BASE_URL}/recommendations`;
+  console.log(`Fetching recommendations from: ${url} with ratings:`, ratings);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(ratings),
+      // Cache policy for POST requests is typically 'no-store' by default
+      // cache: 'no-store', // Explicitly set if needed
+    });
+
+    if (!response.ok) {
+      // Handle HTTP errors
+      console.error(`API Error (Recommendations): ${response.status} ${response.statusText}`);
+      try {
+        // Attempt to get more detailed error from backend response body
+        const errorData = await response.json();
+        console.error("Backend Error Detail:", errorData);
+      } catch (_parseError) {
+        console.error("Could not parse error response body.");
+      }
+      return null;
+    }
+
+    // Backend should return an array of Movie objects
+    const recommendedMovies: Movie[] = await response.json();
+    return recommendedMovies;
+
+  } catch (error) {
+    console.error("Failed to fetch recommendations:", error);
+    return null;
+  }
+}

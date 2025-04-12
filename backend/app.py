@@ -159,6 +159,10 @@ def get_tmdb_poster_path(tmdb_id):
     return poster_path
 # ----------------------------------------------------------------
 
+# --- TMDB ID to MovieID Mapping --- 
+# Create the reverse mapping for easier lookup
+tmdb_id_to_movie_id = {v: k for k, v in movie_id_to_tmdb_id.items()} if movie_id_to_tmdb_id else {}
+
 # --- Film Listesi Endpoint'i (TMDB ve Arama Entegrasyonu ile) ---
 @app.route('/api/movies', methods=['GET'])
 def get_movies():
@@ -281,8 +285,87 @@ def get_movie_details(movie_id):
         abort(500, description="Film detayı alınırken bir sunucu hatası oluştu.")
 # ---------------------------
 
-# Uygulamanın doğrudan çalıştırıldığında (import edilmediğinde) başlamasını sağla
+# --- Yeni Öneri Endpoint'i (Puanlara Göre) ---
+@app.route('/api/recommendations', methods=['POST'])
+def get_recommendations_from_ratings():
+    """
+    Kullanıcının sağladığı puanlara göre film önerileri döndürür.
+    İstek gövdesinde {'tmdbId1': rating1, 'tmdbId2': rating2, ...} beklenir.
+    """
+    if recommendation_model is None or movies_df is None or not tmdb_id_to_movie_id:
+        abort(503, description="Öneri sistemi veya veriler şu anda kullanılamıyor.")
+
+    user_ratings_tmdb = request.get_json()
+
+    if not user_ratings_tmdb or not isinstance(user_ratings_tmdb, dict):
+        abort(400, description="Geçersiz istek formatı. {'tmdbId': rating} formatında JSON bekleniyor.")
+
+    print(f"Yeni puanlara göre öneri isteği alındı: {user_ratings_tmdb}")
+
+    try:
+        # 1. tmdbId'leri movieId'lere çevir ve geçerliliğini kontrol et
+        user_ratings_internal = {}
+        valid_ratings_count = 0
+        for tmdb_id_str, rating in user_ratings_tmdb.items():
+            try:
+                tmdb_id = int(tmdb_id_str)
+                movie_id = tmdb_id_to_movie_id.get(tmdb_id)
+                # Modelin bu movieId'yi bilip bilmediğini movie_map ile kontrol et
+                if movie_id and movie_id in recommendation_model.movie_map: 
+                    user_ratings_internal[movie_id] = float(rating)
+                    valid_ratings_count += 1
+                else:
+                    # Bu uyarıları loglamak isteyebiliriz ama cliente göndermeye gerek yok
+                    # print(f"Uyarı: tmdbId {tmdb_id} için geçerli movieId bulunamadı veya modelde yok.")
+                    pass 
+            except ValueError:
+                 # print(f"Uyarı: Geçersiz tmdbId formatı: {tmdb_id_str}")
+                 pass
+
+        if valid_ratings_count < 1: 
+             abort(400, description="Öneri yapmak için yeterli sayıda geçerli film puanı sağlanmadı.")
+             
+        # --- Model Kullanımı (Yeni Metod ile) --- 
+        # Yeni eklenen metodu kullanarak önerileri al
+        recommendations = recommendation_model.predict_for_new_user(
+            ratings_dict=user_ratings_internal, 
+            n_recommendations=20 # İlk 20 öneriyi alalım
+        )
+
+        # Sonuçları formatla (movieId, title, score, posterUrl, tmdbId, genres)
+        result_with_posters = []
+        # recommendations artık (movieId, title, score) tuple listesi döndürüyor olmalı
+        for movie_id, title, score in recommendations:
+            # Film bilgilerini movies_df'ten al
+            movie_info = movies_df[movies_df['movieId'] == movie_id].iloc[0] 
+            tmdb_id = movie_id_to_tmdb_id.get(movie_id)
+            poster_url = None
+            if tmdb_id:
+                poster_path = get_tmdb_poster_path(tmdb_id)
+                if poster_path:
+                    poster_url = f"{TMDB_POSTER_BASE_URL}{poster_path}"
+            
+            result_with_posters.append({
+                "movieId": int(movie_id), 
+                "tmdbId": int(tmdb_id) if tmdb_id else None,
+                "title": title, 
+                "genres": movie_info['genres'],
+                "score": score, # Tahmini puan
+                "posterUrl": poster_url
+            })
+
+        return jsonify(result_with_posters)
+
+    except Exception as e:
+        print(f"Puanlara göre öneri alınırken hata oluştu: {e}")
+        import traceback
+        traceback.print_exc() 
+        abort(500, description="Öneriler alınırken bir sunucu hatası oluştu.")
+# --------------------------
+
+# Uygulamayı Gunicorn gibi bir WSGI sunucusu üzerinden çalıştırırken
+# bu bloğun çalışmaması önemlidir.
 if __name__ == '__main__':
-    # debug=True modu, kodda değişiklik yaptığınızda sunucunun otomatik yeniden başlamasını sağlar
-    # ve olası hataları tarayıcıda gösterir. Production ortamında False olmalıdır.
+    # Debug modunu açmak için debug=True ekleyin
+    # Host'u 0.0.0.0 olarak ayarlamak, ağdaki diğer cihazlardan erişime izin verir.
     app.run(debug=True, host='0.0.0.0', port=5000)

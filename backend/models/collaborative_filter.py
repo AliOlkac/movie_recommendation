@@ -112,6 +112,84 @@ class CollaborativeFilteringModel:
         # Veya daha fazla bilgi: (movieId, title, score) tuple listesi
         return list(recommendations.itertuples(index=False, name=None))
 
+    def predict_for_new_user(self, ratings_dict, n_recommendations=10):
+        """
+        Yeni bir kullanıcının verdiği puanlara göre film önerileri üretir.
+        ratings_dict: {movieId: rating} formatında.
+        """
+        if self.item_vectors is None or not self.movie_map:
+            print("Hata: Model item vektörleri veya movie_map yüklenmemiş.")
+            return []
+
+        print(f"Yeni kullanıcı puanlarına göre öneriler hesaplanıyor: {ratings_dict}")
+        
+        # Geçerli movieId'leri ve puanları alalım
+        valid_ratings = []
+        rated_movie_ids = set()
+        for movie_id, rating in ratings_dict.items():
+            if movie_id in self.movie_map:
+                valid_ratings.append((self.movie_map[movie_id], rating))
+                rated_movie_ids.add(movie_id)
+            else:
+                print(f"Uyarı: movieId {movie_id} modelin movie_map'inde bulunamadı.")
+
+        if not valid_ratings:
+            print("Hata: Geçerli film puanı bulunamadı.")
+            return []
+
+        # Kullanıcının puanladığı filmlerin vektörlerinin ağırlıklı ortalamasını al
+        # Bu, geçici kullanıcı vektörünü temsil edecek
+        temp_user_vector = np.zeros(self.n_components)
+        total_weight = 0
+        for item_index, rating in valid_ratings:
+            # Basit ağırlıklandırma (rating değeri ile)
+            # Daha sofistike: rating - ortalama rating gibi?
+            weight = rating # Şimdilik puanı ağırlık olarak alalım
+            temp_user_vector += weight * self.item_vectors[item_index, :]
+            total_weight += weight
+            
+        if total_weight > 0:
+            temp_user_vector /= total_weight
+        else: # Eğer tüm ağırlıklar 0 ise (örn: tüm puanlar 0 ise?)
+            print("Uyarı: Puan ağırlıkları toplamı sıfır, ortalama vektör hesaplanamadı.")
+            # Belki burada rastgele veya popüler filmler önerilebilir?
+            # Şimdilik boş liste dönelim.
+            return []
+            
+        # Bu geçici vektör ile tüm item vektörlerinin nokta çarpımını hesapla
+        scores = temp_user_vector.dot(self.item_vectors.T)
+
+        # Skorları movieId ile eşleştir
+        movie_map_inv = {v: k for k, v in self.movie_map.items()}
+        movie_indices = np.arange(len(scores))
+        movie_ids = [movie_map_inv[i] for i in movie_indices if i in movie_map_inv] # Güvenlik kontrolü
+        
+        # Sadece geçerli movie_id'ler için skorları al
+        valid_scores = {movie_ids[i]: scores[i] for i in range(len(scores)) if i in movie_map_inv}
+
+        # DataFrame oluştur
+        score_df = pd.DataFrame(valid_scores.items(), columns=['movieId', 'score'])
+        
+        # Kullanıcının zaten oy verdiği filmleri filtrele (ratings_dict'ten gelenler)
+        recommendations = score_df[~score_df['movieId'].isin(rated_movie_ids)]
+
+        # En yüksek skora sahip N filmi al
+        recommendations = recommendations.nlargest(n_recommendations, 'score')
+
+        # Film başlıklarını ekle
+        recommendations['title'] = recommendations['movieId'].map(self.movie_titles)
+
+        print(f"Yeni kullanıcı için öneriler:")
+        print(recommendations[['movieId', 'title', 'score']])
+        
+        return list(recommendations.itertuples(index=False, name=None))
+
+    def get_all_item_ids(self):
+        """Modelin bildiği tüm geçerli item (movie) ID'lerini döndürür."""
+        if not self.movie_map:
+            return []
+        return list(self.movie_map.keys())
+
     def save_model(self, filepath='cf_model.joblib'):
         """
         Eğitilmiş modeli, vektörleri ve haritaları dosyaya kaydeder.
