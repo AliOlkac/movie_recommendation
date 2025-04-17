@@ -300,27 +300,38 @@ def get_recommendations_from_ratings():
     if not user_ratings_tmdb or not isinstance(user_ratings_tmdb, dict):
         abort(400, description="Geçersiz istek formatı. {'tmdbId': rating} formatında JSON bekleniyor.")
 
-    print(f"Yeni puanlara göre öneri isteği alındı: {user_ratings_tmdb}")
+    print(f"Yeni puanlara göre öneri isteği alındı (TMDB IDs): {user_ratings_tmdb}") # Logu güncelleyelim
 
     try:
         # 1. tmdbId'leri movieId'lere çevir ve geçerliliğini kontrol et
         user_ratings_internal = {}
         valid_ratings_count = 0
-        for tmdb_id_str, rating in user_ratings_tmdb.items():
+        # user_ratings_tmdb = {"tmdbId1": rating1, "tmdbId2": rating2, ...}
+        for tmdb_id_str, rating in user_ratings_tmdb.items(): # Doğru değişkenleri kullan
             try:
                 tmdb_id = int(tmdb_id_str)
+                # Doğru rating değerini al
+                current_rating = float(rating) 
+                # Rating değerinin mantıklı bir aralıkta olduğunu kontrol edelim (örn: 0.5 - 5.0)
+                if not (0.5 <= current_rating <= 5.0):
+                    print(f"Uyarı: Geçersiz rating değeri ({current_rating}) tmdbId {tmdb_id} için atlanıyor.")
+                    continue # Geçersiz puanı atla
+                    
                 movie_id = tmdb_id_to_movie_id.get(tmdb_id)
                 # Modelin bu movieId'yi bilip bilmediğini movie_map ile kontrol et
                 if movie_id and movie_id in recommendation_model.movie_map: 
-                    user_ratings_internal[movie_id] = float(rating)
+                    # movie_id'ye karşılık doğru rating'i ata
+                    user_ratings_internal[movie_id] = current_rating 
                     valid_ratings_count += 1
                 else:
                     # Bu uyarıları loglamak isteyebiliriz ama cliente göndermeye gerek yok
                     # print(f"Uyarı: tmdbId {tmdb_id} için geçerli movieId bulunamadı veya modelde yok.")
                     pass 
             except ValueError:
-                 # print(f"Uyarı: Geçersiz tmdbId formatı: {tmdb_id_str}")
+                 # print(f"Uyarı: Geçersiz tmdbId ({tmdb_id_str}) veya rating ({rating}) formatı.")
                  pass
+                 
+        print(f"Modele gönderilecek dahili puanlar (Movie IDs): {user_ratings_internal}") # Kontrol için log ekleyelim
 
         if valid_ratings_count < 1: 
              abort(400, description="Öneri yapmak için yeterli sayıda geçerli film puanı sağlanmadı.")

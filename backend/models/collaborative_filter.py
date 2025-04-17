@@ -3,9 +3,11 @@ import pandas as pd
 import numpy as np
 from scipy.sparse import csr_matrix # Seyrek matrisler için
 from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics.pairwise import cosine_similarity # Kosinüs benzerliği için import
 import joblib # Modeli kaydetmek/yüklemek için
 import os
 import sys # Test bloğunda path için
+from collections import defaultdict # Komşu filmlerini saymak için
 
 # Öneri modeli için bir sınıf oluşturmak daha düzenli olabilir
 class CollaborativeFilteringModel:
@@ -112,77 +114,143 @@ class CollaborativeFilteringModel:
         # Veya daha fazla bilgi: (movieId, title, score) tuple listesi
         return list(recommendations.itertuples(index=False, name=None))
 
-    def predict_for_new_user(self, ratings_dict, n_recommendations=10):
+    def predict_for_new_user(self, ratings_dict, n_recommendations=10, k_neighbors=50, rating_threshold=3.5):
         """
-        Yeni bir kullanıcının verdiği puanlara göre film önerileri üretir.
+        Yeni bir kullanıcının puanlarına göre, benzer kullanıcıları bularak öneri üretir.
         ratings_dict: {movieId: rating} formatında.
+        k_neighbors: Benzerlik için dikkate alınacak komşu sayısı.
+        rating_threshold: Komşuların bir filmi önermesi için vermesi gereken min puan.
         """
-        if self.item_vectors is None or not self.movie_map:
-            print("Hata: Model item vektörleri veya movie_map yüklenmemiş.")
+        if self.item_vectors is None or self.user_vectors is None or not self.movie_map or not self.user_map or not self.user_rated_movies:
+            print("Hata: Model vektörleri veya haritalamalar yüklenmemiş.")
             return []
 
-        print(f"Yeni kullanıcı puanlarına göre öneriler hesaplanıyor: {ratings_dict}")
-        
-        # Geçerli movieId'leri ve puanları alalım
+        print(f"Kullanıcı tabanlı öneriler hesaplanıyor (k={k_neighbors}, threshold={rating_threshold}): {ratings_dict}")
+
+        # 1. Geçerli movieId'leri ve normalize edilmiş puanları al
         valid_ratings = []
         rated_movie_ids = set()
+        average_rating = 3.0 # Normalizasyon için ortalama puan varsayımı
         for movie_id, rating in ratings_dict.items():
             if movie_id in self.movie_map:
-                valid_ratings.append((self.movie_map[movie_id], rating))
+                # Puanı normalize et (ortalama etrafında)
+                normalized_rating = float(rating) - average_rating
+                valid_ratings.append((self.movie_map[movie_id], normalized_rating))
                 rated_movie_ids.add(movie_id)
-            else:
-                print(f"Uyarı: movieId {movie_id} modelin movie_map'inde bulunamadı.")
+            # else: Modelde olmayan filmleri sessizce atla
 
         if not valid_ratings:
             print("Hata: Geçerli film puanı bulunamadı.")
             return []
 
-        # Kullanıcının puanladığı filmlerin vektörlerinin ağırlıklı ortalamasını al
-        # Bu, geçici kullanıcı vektörünü temsil edecek
+        # 2. Geçici kullanıcı vektörünü oluştur (normalize puanlarla ağırlıklı ortalama)
         temp_user_vector = np.zeros(self.n_components)
-        total_weight = 0
-        for item_index, rating in valid_ratings:
-            # Basit ağırlıklandırma (rating değeri ile)
-            # Daha sofistike: rating - ortalama rating gibi?
-            weight = rating # Şimdilik puanı ağırlık olarak alalım
-            temp_user_vector += weight * self.item_vectors[item_index, :]
+        total_weight = 0 # Ağırlıkların mutlak değerini kullanalım
+        for item_index, norm_rating in valid_ratings:
+            weight = abs(norm_rating) # Ağırlık olarak mutlak değeri alalım
+            temp_user_vector += norm_rating * self.item_vectors[item_index, :]
             total_weight += weight
-            
+
         if total_weight > 0:
-            temp_user_vector /= total_weight
-        else: # Eğer tüm ağırlıklar 0 ise (örn: tüm puanlar 0 ise?)
-            print("Uyarı: Puan ağırlıkları toplamı sıfır, ortalama vektör hesaplanamadı.")
-            # Belki burada rastgele veya popüler filmler önerilebilir?
-            # Şimdilik boş liste dönelim.
+            # Ortalamayı almak yerine, belki de sadece yönü korumak yeterli?
+            # Ya da normalize etmek?
+            # Şimdilik ağırlıklı toplamı kullanalım, bölmeyelim?
+            # temp_user_vector /= total_weight # Vektörü normalize edebiliriz veya etmeyebiliriz.
+             # Vektörü normalize edelim (uzunluğunu 1 yapalım) - kosinüs benzerliği için daha iyi
+             norm = np.linalg.norm(temp_user_vector)
+             if norm > 0:
+                 temp_user_vector /= norm
+             else:
+                 print("Uyarı: Geçici kullanıcı vektörü sıfır.")
+                 return [] # Sıfır vektörüyle benzerlik hesaplanamaz
+        else:
+            print("Uyarı: Puan ağırlıkları toplamı sıfır.")
             return []
+
+        # 3. Benzer Kullanıcıları Bulma (Kosinüs Benzerliği)
+        # temp_user_vector'ü (1, n_components) şekline getir
+        temp_user_vector_reshaped = temp_user_vector.reshape(1, -1)
+        
+        # Tüm mevcut kullanıcı vektörleriyle benzerliği hesapla
+        similarities = cosine_similarity(temp_user_vector_reshaped, self.user_vectors)
+        
+        # Benzerlik skorlarını (kullanıcı_index, benzerlik) şeklinde al
+        user_similarity_scores = list(enumerate(similarities[0]))
+        
+        # Benzerliğe göre sırala (en yüksekten düşüğe)
+        user_similarity_scores.sort(key=lambda x: x[1], reverse=True)
+        
+        # En benzer K komşuyu seç (kendisi hariç - ama zaten yeni kullanıcı)
+        top_k_neighbors = user_similarity_scores[:k_neighbors]
+        
+        # Komşu user_index'lerini ve benzerliklerini al
+        neighbor_indices = [idx for idx, sim in top_k_neighbors]
+        # neighbor_similarities = {idx: sim for idx, sim in top_k_neighbors} # Benzerlikleri sakla (ağırlıklandırma için?)
+
+        # user_map'in tersini oluştur: index -> userId
+        user_map_inv = {v: k for k, v in self.user_map.items()}
+
+        print(f"En benzer {len(neighbor_indices)} komşu bulundu.")
+
+        # 4. Komşu Filmlerini Toplama
+        recommended_movie_scores = defaultdict(float) # {movieId: toplam_benzerlik_skoru}
+        recommendation_counts = defaultdict(int)    # {movieId: öneren_komşu_sayısı}
+        
+        for neighbor_idx in neighbor_indices:
+            neighbor_user_id = user_map_inv.get(neighbor_idx)
+            if neighbor_user_id is None:
+                continue
             
-        # Bu geçici vektör ile tüm item vektörlerinin nokta çarpımını hesapla
-        scores = temp_user_vector.dot(self.item_vectors.T)
+            neighbor_similarity = similarities[0][neighbor_idx] # Komşunun benzerlik skoru
+            
+            # Bu komşunun puanladığı filmleri al (self.user_rated_movies'den alınmalı ama puan yok)
+            # Bunun yerine eğitime kullanılan orijinal veriden almak daha doğru olur.
+            # Şimdilik bu veri setinin (df) burada olmadığını varsayalım.
+            # Geçici çözüm: user_rated_movies setini kullanalım, ama puan bilgisi eksik.
+            # Bu nedenle sadece komşunun oyladığı filmleri bulup, benzerlikle ağırlıklandıralım.
+            # Daha iyi yaklaşım: fit sırasında {userId: {movieId: rating}} sözlüğü oluşturmak.
+            
+            neighbor_rated_set = self.user_rated_movies.get(neighbor_user_id, set())
+            
+            for movie_id in neighbor_rated_set:
+                # Yeni kullanıcının zaten puanladığı filmleri atla
+                if movie_id not in rated_movie_ids:
+                    # Filmin toplam skoruna komşunun benzerliğini ekle
+                    recommended_movie_scores[movie_id] += neighbor_similarity
+                    recommendation_counts[movie_id] += 1
 
-        # Skorları movieId ile eşleştir
-        movie_map_inv = {v: k for k, v in self.movie_map.items()}
-        movie_indices = np.arange(len(scores))
-        movie_ids = [movie_map_inv[i] for i in movie_indices if i in movie_map_inv] # Güvenlik kontrolü
+        if not recommended_movie_scores:
+             print("Komşulardan önerilebilecek yeni film bulunamadı.")
+             return []
+
+        # 5. Filtreleme ve Sıralama
+        # Potansiyel önerileri DataFrame'e dönüştür
+        recs_df = pd.DataFrame(recommended_movie_scores.items(), columns=['movieId', 'score'])
+        recs_df['count'] = recs_df['movieId'].map(recommendation_counts)
         
-        # Sadece geçerli movie_id'ler için skorları al
-        valid_scores = {movie_ids[i]: scores[i] for i in range(len(scores)) if i in movie_map_inv}
-
-        # DataFrame oluştur
-        score_df = pd.DataFrame(valid_scores.items(), columns=['movieId', 'score'])
+        # Belki sadece belirli sayıda komşu tarafından önerilenleri al?
+        # min_neighbors = 2
+        # recs_df = recs_df[recs_df['count'] >= min_neighbors]
         
-        # Kullanıcının zaten oy verdiği filmleri filtrele (ratings_dict'ten gelenler)
-        recommendations = score_df[~score_df['movieId'].isin(rated_movie_ids)]
+        # Skora göre sırala
+        recs_df = recs_df.sort_values(by='score', ascending=False)
+        
+        # En iyi N tanesini al
+        top_recommendations = recs_df.head(n_recommendations)
 
-        # En yüksek skora sahip N filmi al
-        recommendations = recommendations.nlargest(n_recommendations, 'score')
-
+        # 6. Sonuçları Formatla
         # Film başlıklarını ekle
-        recommendations['title'] = recommendations['movieId'].map(self.movie_titles)
+        top_recommendations['title'] = top_recommendations['movieId'].map(self.movie_titles)
 
-        print(f"Yeni kullanıcı için öneriler:")
-        print(recommendations[['movieId', 'title', 'score']])
+        print(f"Kullanıcı tabanlı öneriler:")
+        print(top_recommendations[['movieId', 'title', 'score', 'count']])
         
-        return list(recommendations.itertuples(index=False, name=None))
+        # Eksik başlıkları doldur (olmamalı ama garanti olsun)
+        top_recommendations = top_recommendations.dropna(subset=['title'])
+
+        # (movieId, title, score) tuple listesi döndür
+        # Skoru normalize edebiliriz veya ham bırakabiliriz. Şimdilik ham bırakalım.
+        return list(top_recommendations[['movieId', 'title', 'score']].itertuples(index=False, name=None))
 
     def get_all_item_ids(self):
         """Modelin bildiği tüm geçerli item (movie) ID'lerini döndürür."""
