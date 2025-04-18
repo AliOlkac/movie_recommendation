@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   Movie, 
   fetchRecommendations, 
-  fetchTmdbTopRatedMovies, 
+  fetchMoviesByDiscover, 
   searchTmdbMovies, 
   convertTmdbMovieToMovie 
 } from '@/lib/api';
@@ -17,12 +17,11 @@ import RecommendationsModal from './RecommendationsModal';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { debounce } from 'lodash';
 import { FaStar, FaHeart, FaTimesCircle } from 'react-icons/fa';
-import Image from 'next/image';
+
 
 // --- localStorage Anahtarları ve Tipleri ---
 const RATINGS_STORAGE_KEY = 'movieRatings';
 const FAVORITES_STORAGE_KEY = 'movieFavorites';
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w200';
 
 // Updated type definitions to include posterUrl
 interface RatingInfo {
@@ -87,7 +86,7 @@ const saveFavoritesToStorage = (favorites: Favorites) => {
 };
 
 export default function MovieList() {
-  const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
+  const [displayedMovies, setDisplayedMovies] = useState<Movie[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -108,21 +107,20 @@ export default function MovieList() {
   const [isRecLoading, setIsRecLoading] = useState(false);
   const [recError, setRecError] = useState<string | null>(null);
 
-  // Function to load TOP RATED movies from TMDB (paginated)
-  const loadTopRatedMovies = useCallback(async (page: number) => {
+  const loadMoviesByVoteCount = useCallback(async (page: number) => {
     if (page === 1) setIsLoading(true);
     else setIsLoadingMore(true);
     setError(null);
 
-    const data = await fetchTmdbTopRatedMovies(page);
+    const data = await fetchMoviesByDiscover(page);
 
     if (data) {
       const newMovies = data.results.map(convertTmdbMovieToMovie);
-      setTopRatedMovies(prevMovies => page === 1 ? newMovies : [...prevMovies, ...newMovies]);
+      setDisplayedMovies(prevMovies => page === 1 ? newMovies : [...prevMovies, ...newMovies]);
       setCurrentPage(page);
       setHasMore(page < data.total_pages);
     } else {
-      setError('Could not load top rated movies.');
+      setError('Could not load movies sorted by vote count.');
       setHasMore(false);
     }
     
@@ -130,7 +128,6 @@ export default function MovieList() {
     setIsLoadingMore(false);
   }, []);
 
-  // Function to load SEARCH results from TMDB (only first page for now)
   const loadSearchResults = useCallback(async (term: string) => {
     if (!term) return;
     setIsSearchLoading(true);
@@ -151,13 +148,11 @@ export default function MovieList() {
     setIsSearchLoading(false);
   }, []);
 
-  // Debounced search function
   const debouncedLoadSearchResults = useCallback(debounce(loadSearchResults, 400), [loadSearchResults]);
 
-  // Initial load of top rated movies
   useEffect(() => {
-      loadTopRatedMovies(1); 
-  }, [loadTopRatedMovies]);
+      loadMoviesByVoteCount(1); 
+  }, [loadMoviesByVoteCount]);
 
   const handleSearchChange = (term: string) => {
     const trimmedTerm = term.trim();
@@ -177,56 +172,46 @@ export default function MovieList() {
     }
   };
 
-  // Restore clearSearch function
   const clearSearch = () => {
       handleSearchChange('');
   };
 
-  // Handler for infinite scroll
   const loadMoreMovies = () => {
     if (!isSearching && !isLoadingMore && hasMore) {
-      loadTopRatedMovies(currentPage + 1);
+      loadMoviesByVoteCount(currentPage + 1);
     }
   };
 
-  // Open modal when a movie card is clicked
   const handleCardClick = (tmdbId: number) => setSelectedTmdbId(tmdbId);
 
-  // Close the modal
   const handleCloseModal = () => setSelectedTmdbId(null);
 
-  // Find movie title helper (searches both lists)
   const findMovieTitle = (tmdbId: number): string => {
-      const movieInTopRated = topRatedMovies.find(m => m.tmdbId === tmdbId);
-      if (movieInTopRated) return movieInTopRated.title;
+      const movieInDisplayed = displayedMovies.find(m => m.tmdbId === tmdbId);
+      if (movieInDisplayed) return movieInDisplayed.title;
       const movieInSearch = searchResults?.find(m => m.tmdbId === tmdbId);
       if (movieInSearch) return movieInSearch.title;
-      // Fallback: maybe check localStorage if title was stored previously?
-      // Or return a default string
       return userRatings[tmdbId]?.title || userFavorites[tmdbId]?.title || 'Unknown Title'; 
   };
 
-  // *** NEW HELPER: Find movie poster URL ***
   const findMoviePosterUrl = (tmdbId: number): string | null => {
-      const movieInTopRated = topRatedMovies.find(m => m.tmdbId === tmdbId);
-      if (movieInTopRated) return movieInTopRated.posterUrl;
+      const movieInDisplayed = displayedMovies.find(m => m.tmdbId === tmdbId);
+      if (movieInDisplayed) return movieInDisplayed.posterUrl;
       const movieInSearch = searchResults?.find(m => m.tmdbId === tmdbId);
       if (movieInSearch) return movieInSearch.posterUrl;
-      // Fallback using localStorage data
       return userRatings[tmdbId]?.posterUrl || userFavorites[tmdbId]?.posterUrl || null;
   };
 
-  // Process rating submitted from the modal - **UPDATE TO SAVE POSTERURL**
   const handleRateMovie = (tmdbId: number, rating: number) => { 
     const movieTitle = findMovieTitle(tmdbId);
-    const moviePosterUrl = findMoviePosterUrl(tmdbId); // Get poster URL
+    const moviePosterUrl = findMoviePosterUrl(tmdbId);
     setUserRatings(prevRatings => {
         const newRatings = {
             ...prevRatings,
             [tmdbId]: { 
                 rating: rating, 
                 title: movieTitle,
-                posterUrl: moviePosterUrl // Save poster URL
+                posterUrl: moviePosterUrl
             },
         };
         saveRatingsToStorage(newRatings); 
@@ -235,7 +220,6 @@ export default function MovieList() {
     });
   };
 
-  // Function to remove a rating
   const removeRating = (tmdbId: number) => {
     setUserRatings(prevRatings => {
       const newRatings = { ...prevRatings };
@@ -245,10 +229,9 @@ export default function MovieList() {
     });
   };
 
-  // Favorite handler - **UPDATE TO SAVE POSTERURL**
   const toggleFavorite = (tmdbId: number) => {
     const movieTitle = findMovieTitle(tmdbId);
-    const moviePosterUrl = findMoviePosterUrl(tmdbId); // Get poster URL
+    const moviePosterUrl = findMoviePosterUrl(tmdbId);
     setUserFavorites(prevFavorites => {
       const newFavorites = { ...prevFavorites };
       if (newFavorites[tmdbId]) {
@@ -256,7 +239,7 @@ export default function MovieList() {
       } else {
         newFavorites[tmdbId] = { 
             title: movieTitle, 
-            posterUrl: moviePosterUrl // Save poster URL
+            posterUrl: moviePosterUrl
         }; 
       }
       saveFavoritesToStorage(newFavorites); 
@@ -265,35 +248,29 @@ export default function MovieList() {
     });
   };
 
-  // Panel toggle functions
   const openRatingsPanel = () => setIsRatingsPanelOpen(true);
   const closeRatingsPanel = () => setIsRatingsPanelOpen(false);
   const openFavoritesPanel = () => setIsFavoritesPanelOpen(true);
   const closeFavoritesPanel = () => setIsFavoritesPanelOpen(false);
 
-  // Calculate number of rated movies for the button badge
   const ratedMoviesCount = Object.keys(userRatings).length;
   const favoriteMoviesCount = Object.keys(userFavorites).length;
 
-  // Recommendation Modal handler
   const handleGetRecommendations = async () => {
-    // Close the ratings panel first
     closeRatingsPanel(); 
-    setIsRecModalOpen(true); // Open the recommendations modal immediately
-    setIsRecLoading(true); // Set loading state
-    setRecError(null); // Clear previous errors
-    setRecommendedMovies(null); // Clear previous recommendations
+    setIsRecModalOpen(true);
+    setIsRecLoading(true);
+    setRecError(null);
+    setRecommendedMovies(null);
 
     console.log("Requesting recommendations with ratings:", userRatings);
 
-    // **Transform ratings object to the expected format { [tmdbId: number]: number }**
     const ratingsForApi: { [key: number]: number } = {};
     for (const tmdbId in userRatings) {
       ratingsForApi[parseInt(tmdbId, 10)] = userRatings[tmdbId].rating;
     }
     console.log("Ratings being sent to API:", ratingsForApi);
 
-    // **Call API with the transformed ratings**
     const recommendations = await fetchRecommendations(ratingsForApi);
 
     if (recommendations) {
@@ -303,23 +280,18 @@ export default function MovieList() {
       setRecError("Could not fetch recommendations. Please try again later.");
       console.error("Failed to fetch recommendations from API.");
     }
-    setIsRecLoading(false); // End loading state
+    setIsRecLoading(false);
   };
 
   const closeRecModal = () => {
     setIsRecModalOpen(false);
-    // Optionally clear state when closing
-    // setRecommendedMovies(null);
-    // setRecError(null);
   };
 
   return (
     <div className="relative min-h-screen pt-20">
       
-      {/* --- Fixed Top Bar --- */}
       <div className="fixed top-0 left-0 right-0 z-30 h-20 bg-gradient-to-b from-black/60 via-black/40 to-transparent backdrop-blur-lg border-b border-yellow-600/20 flex items-center justify-between px-4 md:px-8">
           
-          {/* Left: Favorites Button */}
           <div className="flex-shrink-0">
               <button
                 onClick={openFavoritesPanel}
@@ -327,7 +299,6 @@ export default function MovieList() {
                 aria-label="Open favorite movies panel"
               >
                  <FaHeart size={18} />
-                 {/* Badge */} 
                  {favoriteMoviesCount > 0 && (
                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center text-[10px]">
                      {favoriteMoviesCount}
@@ -336,13 +307,11 @@ export default function MovieList() {
               </button>
           </div>
 
-          {/* Center: Search Bar */} 
           <div className="flex-grow max-w-xl mx-4 relative">
                <SearchBar 
                   initialSearchTerm={searchTerm}
                   onSearchChange={handleSearchChange} 
               />
-              {/* Clear button inside SearchBar */} 
               {searchTerm && (
                   <button 
                       onClick={clearSearch} 
@@ -355,7 +324,6 @@ export default function MovieList() {
               )}
           </div>
 
-          {/* Right: Ratings Button */} 
           <div className="flex-shrink-0">
               <button
                 onClick={openRatingsPanel}
@@ -363,7 +331,6 @@ export default function MovieList() {
                 aria-label="Open rated movies panel"
               >
                  <FaStar size={18} />
-                 {/* Badge */} 
                  {ratedMoviesCount > 0 && (
                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center text-[10px]">
                      {ratedMoviesCount}
@@ -372,13 +339,9 @@ export default function MovieList() {
               </button>
           </div>
       </div>
-      {/* --- End of Fixed Top Bar --- */} 
 
-      {/* === Search Results Section === */} 
-      {/* Show this section only when search term exists */} 
       {isSearching && (
           <div className="px-4 md:px-8 mb-8">
-              {/* Loading/Error/Results logic for search... */} 
               {isSearchLoading && searchResults === null && (
                   <p className="text-center text-gray-400">Searching...</p>
               )}
@@ -405,17 +368,13 @@ export default function MovieList() {
           </div>
       )}
 
-      {/* === Top Rated Movies Section (Infinite Scroll) === */} 
-      {/* Always show this section if not searching */}
       {!isSearching && !error && (
           <div className="px-4 md:px-8">
-              {/* Initial Loading for Top Rated */}
-              {isLoading && topRatedMovies.length === 0 && (
-                  <p className="text-center text-yellow-500 mt-10">Loading top rated movies...</p>
+              {isLoading && displayedMovies.length === 0 && (
+                  <p className="text-center text-yellow-500 mt-10">Loading popular movies...</p>
               )}
-              {/* Infinite Scroll Component */} 
               <InfiniteScroll
-                  dataLength={topRatedMovies.length} 
+                  dataLength={displayedMovies.length} 
                   next={loadMoreMovies} 
                   hasMore={hasMore} 
                   loader={ 
@@ -424,18 +383,18 @@ export default function MovieList() {
                       </div>
                   }
                   endMessage={ 
-                      !isSearching && topRatedMovies.length > 0 ? (
+                      !isSearching && displayedMovies.length > 0 ? (
                           <p className="text-center py-8 text-gray-500">
-                              <b>You have seen all top rated movies!</b>
+                              <b>You have seen all movies!</b>
                           </p>
                       ) : null
                   }
                   className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pb-16"
                   style={{ overflow: 'visible' }}
               >
-                  {topRatedMovies.map((movie) => (
+                  {displayedMovies.map((movie) => (
                       <MovieCard
-                          key={`toprated-${movie.tmdbId}-${movie.movieId || 'tmdb'}`}
+                          key={`discover-${movie.tmdbId}-${movie.movieId || 'tmdb'}`}
                           tmdbId={movie.tmdbId} 
                           title={movie.title}
                           genres={movie.genres} 
@@ -447,12 +406,10 @@ export default function MovieList() {
           </div>
       )}
       
-      {/* General Error Message */}
       {error && !isSearching && (
           <p className="text-center text-red-500 mt-10">{error}</p>
       )}
 
-      {/* Movie Detail Modal */}
       <MovieModal 
         tmdbId={selectedTmdbId}
         onClose={handleCloseModal}
@@ -462,7 +419,6 @@ export default function MovieList() {
         onToggleFavorite={toggleFavorite}
       />
 
-      {/* Rated Movies Panel - Pass onGetRecommendations */}
       <RatedMoviesPanel 
         isOpen={isRatingsPanelOpen} 
         onClose={closeRatingsPanel} 
@@ -471,7 +427,6 @@ export default function MovieList() {
         onGetRecommendations={handleGetRecommendations}
       />
 
-      {/* Favorites Panel */}
       <FavoritesPanel
         isOpen={isFavoritesPanelOpen}
         onClose={closeFavoritesPanel}
@@ -479,7 +434,6 @@ export default function MovieList() {
         onRemoveFavorite={toggleFavorite}
       />
 
-      {/* Recommendations Modal */}
       <RecommendationsModal
         isOpen={isRecModalOpen}
         onClose={closeRecModal}

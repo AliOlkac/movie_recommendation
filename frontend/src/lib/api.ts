@@ -194,11 +194,12 @@ interface TmdbMovie {
   title: string;
   poster_path: string | null;
   genre_ids: number[];
+  vote_count: number; // Ensure vote_count is included if needed for debugging/display
   // Add other fields if needed, like overview, vote_average etc.
 }
 
-// TMDB API response type for top rated movies (structure is same as popular)
-interface TmdbTopRatedResponse {
+// TMDB API response type for discover/top rated/popular (structure is similar)
+interface TmdbDiscoverResponse { // Renamed interface for clarity
   page: number;
   results: TmdbMovie[];
   total_pages: number;
@@ -206,36 +207,39 @@ interface TmdbTopRatedResponse {
 }
 
 /**
- * Fetches Top Rated movies from The Movie Database (TMDB) API.
+ * Fetches movies from The Movie Database (TMDB) API using the /discover endpoint,
+ * sorted by vote count descending.
  * Reads the API key from the NEXT_PUBLIC_TMDB_API_KEY environment variable.
  * @param page The page number to fetch.
  * @returns A Promise containing the API response or null in case of error.
  */
-export async function fetchTmdbTopRatedMovies(page: number = 1): Promise<TmdbTopRatedResponse | null> {
+// Renamed function
+export async function fetchMoviesByDiscover(page: number = 1): Promise<TmdbDiscoverResponse | null> { 
   const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
   if (!apiKey) {
     console.error('TMDB API key (NEXT_PUBLIC_TMDB_API_KEY) not found.');
     return null;
   }
 
-  // Update the URL to fetch top_rated movies
-  const url = `https://api.themoviedb.org/3/movie/top_rated?api_key=${apiKey}&language=en-US&page=${page}`;
-  console.log(`Fetching top rated movies from TMDB: ${url}`); // Update log message
+  // Use the /discover/movie endpoint with sort_by=vote_count.desc
+  const url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&language=en-US&sort_by=vote_count.desc&page=${page}&include_adult=false&include_video=false`;
+  // Added include_adult and include_video for good measure
+  console.log(`Fetching movies from TMDB Discover (sorted by vote count): ${url}`); 
 
   try {
     const response = await fetch(url, { cache: 'no-store' });
 
     if (!response.ok) {
-      console.error(`TMDB API error (Top Rated Movies): ${response.status} ${response.statusText}`); // Update log message
+      console.error(`TMDB API error (Discover Movies): ${response.status} ${response.statusText}`);
       return null;
     }
 
     // Use the updated interface name
-    const data: TmdbTopRatedResponse = await response.json();
+    const data: TmdbDiscoverResponse = await response.json(); 
     return data;
 
   } catch (error) {
-    console.error("Failed to fetch top rated movies from TMDB:", error); // Update log message
+    console.error("Failed to fetch movies from TMDB Discover:", error);
     return null;
   }
 }
