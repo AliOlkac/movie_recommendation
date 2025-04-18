@@ -25,24 +25,26 @@ const RecommendationsModal: React.FC<RecommendationsModalProps> = ({
   }
 
   return (
-    // Modal Backdrop (similar to MovieModal)
+    // Modal Backdrop - Consistent with MovieModal
     <div 
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
-      onClick={onClose} // Close on backdrop click
-      style={{ backdropFilter: 'blur(8px)' }}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 transition-opacity duration-300"
+      onClick={onClose} 
+      style={{ backdropFilter: 'blur(5px)' }}
     >
-      {/* Modal Content */}
+      {/* Modal Content - Apply gold theme and glassmorphism */}
       <div 
-        className="bg-gray-900/80 backdrop-blur-lg rounded-xl shadow-2xl max-w-4xl w-full max-h-[85vh] border border-white/20 flex flex-col"
-        onClick={(e) => e.stopPropagation()} // Prevent close on content click
+        className="bg-gradient-to-br from-yellow-900/20 via-black/30 to-yellow-900/20 backdrop-blur-xl rounded-xl shadow-2xl max-w-4xl w-full max-h-[85vh] border border-yellow-600/30 flex flex-col"
+        onClick={(e) => e.stopPropagation()}
         style={{ backdropFilter: 'blur(16px)' }}
       >
-        {/* Header */}
-        <div className="flex justify-between items-center p-4 md:p-6 border-b border-white/20">
-          <h2 className="text-xl md:text-2xl font-semibold text-yellow-400">Your Recommendations</h2>
+        {/* Header - Gold theme */}
+        <div className="flex justify-between items-center p-4 md:p-6 border-b border-yellow-600/20">
+          <h2 className="text-xl md:text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500">
+              Your Recommendations
+          </h2>
           <button 
             onClick={onClose}
-            className="text-white/60 hover:text-white bg-black/30 hover:bg-black/50 rounded-full p-2 transition-colors"
+            className="text-yellow-100/60 hover:text-yellow-300 bg-black/40 hover:bg-black/60 rounded-full p-2 transition-colors"
             aria-label="Close recommendations"
           >
             <FaTimes size={18} />
@@ -51,21 +53,21 @@ const RecommendationsModal: React.FC<RecommendationsModalProps> = ({
 
         {/* Body - Scrollable */}
         <div className="p-4 md:p-6 overflow-y-auto flex-grow">
-          {/* Loading State */}
+          {/* Loading State - Gold spinner and text */}
           {isLoading && (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
-              <p className="ml-4 text-white/80">Getting recommendations...</p>
+              <p className="ml-4 text-yellow-100/80">Getting recommendations...</p>
             </div>
           )}
 
-          {/* Error State */}
+          {/* Error State - Adjust button color */}
           {error && !isLoading && (
             <div className="flex flex-col justify-center items-center h-64 text-center">
               <p className="text-red-400 text-lg mb-4">{error}</p>
               <button 
                 onClick={onClose} 
-                className="bg-yellow-500 text-gray-900 px-4 py-2 rounded hover:bg-yellow-600 transition-colors"
+                className="bg-yellow-600 text-black px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
               >
                 Close
               </button>
@@ -89,10 +91,10 @@ const RecommendationsModal: React.FC<RecommendationsModalProps> = ({
             </div>
           )}
 
-          {/* No Recommendations State */}
+          {/* No Recommendations State - Adjust text color */}
           {!isLoading && !error && (!recommendations || recommendations.length === 0) && (
             <div className="flex justify-center items-center h-64">
-              <p className="text-white/60 text-lg">No recommendations found based on your ratings.</p>
+              <p className="text-yellow-100/60 text-lg">No recommendations found based on your ratings.</p>
             </div>
           )}
         </div>

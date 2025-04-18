@@ -75,50 +75,50 @@ const MovieModal: React.FC<MovieModalProps> = ({
   }
 
   return (
-    // Modal Backdrop
+    // Modal Backdrop - More subtle blur, lighter background if needed
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" 
-      onClick={onClose} // Close modal on backdrop click
-      style={{ backdropFilter: 'blur(6px)' }} // Consistent blur
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 transition-opacity duration-300"
+      onClick={onClose} 
+      style={{ backdropFilter: 'blur(5px)' }}
     >
-      {/* Modal Content - Prevent closing when clicking inside */}
+      {/* Modal Content - Apply gold theme and glassmorphism */}
       <div 
-        className="bg-white/10 backdrop-blur-md rounded-lg shadow-xl max-w-3xl w-full overflow-hidden relative border border-white/20" 
-        onClick={(e) => e.stopPropagation()} // Prevents modal close on content click
+        className="bg-gradient-to-br from-yellow-900/20 via-black/30 to-yellow-900/20 backdrop-blur-xl rounded-xl shadow-2xl max-w-3xl w-full overflow-hidden relative border border-yellow-600/30"
+        onClick={(e) => e.stopPropagation()}
         style={{ backdropFilter: 'blur(16px)' }}
       >
-        {/* Close Button */}
+        {/* Close Button - Gold accent on hover */}
         <button 
           onClick={onClose}
-          className="absolute top-3 right-3 text-white/60 hover:text-white bg-black/30 hover:bg-black/50 rounded-full p-2 transition-colors z-10"
+          className="absolute top-3 right-3 text-yellow-100/60 hover:text-yellow-300 bg-black/40 hover:bg-black/60 rounded-full p-2 transition-colors z-10"
           aria-label="Close modal"
         >
           <FaTimes size={18} />
         </button>
 
-        {/* Loading State */}
+        {/* Loading State - Gold spinner */}
         {loading && (
           <div className="flex justify-center items-center h-96">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
           </div>
         )}
 
-        {/* Error State */}
+        {/* Error State - Adjust button color */}
         {error && !loading && (
           <div className="flex flex-col justify-center items-center h-96 text-center p-6">
             <p className="text-red-400 text-lg mb-4">{error}</p>
             <button 
               onClick={onClose}
-              className="bg-yellow-500 text-gray-900 px-4 py-2 rounded hover:bg-yellow-600 transition-colors"
+              className="bg-yellow-600 text-black px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
             >
               Close
             </button>
           </div>
         )}
 
-        {/* Content: Movie Details */}
+        {/* Content: Movie Details - Update text colors and layout */}
         {!loading && !error && movieDetails && (
-          <div className="flex flex-col md:flex-row">
+          <div className="flex flex-col md:flex-row max-h-[85vh]">
             {/* Left Side: Poster */}
             <div className="md:w-1/3 flex-shrink-0 bg-black/20">
               <Image 
@@ -131,35 +131,39 @@ const MovieModal: React.FC<MovieModalProps> = ({
               />
             </div>
 
-            {/* Right Side: Details, Rating, Favorite */}
-            <div className="md:w-2/3 p-6 md:p-8 text-white flex flex-col justify-between">
+            {/* Right Side: Details, Rating, Favorite - Scrollable content */}
+            <div className="md:w-2/3 p-6 md:p-8 text-yellow-50 flex flex-col justify-between overflow-y-auto">
               <div>
-                {/* Title and Year */}
-                <h2 className="text-3xl font-bold mb-2">{movieDetails.title} ({movieDetails.release_date ? new Date(movieDetails.release_date).getFullYear() : 'N/A'})</h2>
+                {/* Title and Year - Use gold color */}
+                <h2 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500">
+                    {movieDetails.title} 
+                    <span className="text-xl font-light text-yellow-200/80 ml-2">({movieDetails.release_date ? new Date(movieDetails.release_date).getFullYear() : 'N/A'})</span>
+                </h2>
                 {/* Genres */}
-                <p className="text-sm text-white/70 mb-4">
-                  {movieDetails.genres?.map((g: { id: number; name: string }) => g.name).join(', ') || 'No genres listed'}
+                <p className="text-sm text-yellow-100/70 mb-4">
+                  {movieDetails.genres?.map(g => g.name).join(', ') || 'No genres listed'}
                 </p>
                 {/* Overview */}
-                <p className="text-base text-white/90 mb-6">
+                <p className="text-base text-yellow-50/90 mb-6">
                   {movieDetails.overview || 'No overview available.'}
                 </p>
               </div>
               
-              {/* Rating and Favorite Section */}
-              <div className="mt-auto flex items-center justify-between pt-6 border-t border-white/20">
+              {/* Rating and Favorite Section - Adjust border, button colors */}
+              <div className="mt-auto flex items-center justify-between pt-6 border-t border-yellow-600/20">
                 {/* Rating Stars */}
                 <div className="flex flex-col items-start">
-                  <span className="text-sm text-white/70 mb-1">Your Rating:</span>
+                  <span className="text-sm text-yellow-100/70 mb-1">Your Rating:</span>
                   <RatingStars 
                     initialRating={initialRating} 
-                    onRatingChange={handleRatingSubmit} // Use the renamed handler
+                    onRatingChange={handleRatingSubmit} 
+                    starColor="text-yellow-400" // Pass gold color to stars
                   />
                 </div>
-                {/* Favorite Button */}
+                {/* Favorite Button - Adjust colors */}
                 <button
                   onClick={handleFavoriteClick}
-                  className={`p-3 rounded-full transition-colors duration-200 ${isFavorite ? 'bg-pink-600/30 text-pink-400 hover:bg-pink-600/50' : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-pink-400'}`}
+                  className={`p-3 rounded-full transition-colors duration-200 ${isFavorite ? 'bg-pink-500/30 text-pink-300 hover:bg-pink-500/40' : 'bg-white/10 text-yellow-100/60 hover:bg-white/20 hover:text-pink-300'}`}
                   aria-label={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
                   title={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
                 >

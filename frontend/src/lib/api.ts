@@ -172,7 +172,7 @@ export async function fetchRecommendations(ratings: UserRatings): Promise<Movie[
         // Attempt to get more detailed error from backend response body
         const errorData = await response.json();
         console.error("Backend Error Detail:", errorData);
-      } catch (_parseError) {
+      } catch {
         console.error("Could not parse error response body.");
       }
       return null;
@@ -184,6 +184,122 @@ export async function fetchRecommendations(ratings: UserRatings): Promise<Movie[
 
   } catch (error) {
     console.error("Failed to fetch recommendations:", error);
+    return null;
+  }
+}
+
+// TMDB Movie type (partial, only fields we need)
+interface TmdbMovie {
+  id: number;
+  title: string;
+  poster_path: string | null;
+  genre_ids: number[];
+  // Add other fields if needed, like overview, vote_average etc.
+}
+
+// TMDB API response type for top rated movies (structure is same as popular)
+interface TmdbTopRatedResponse {
+  page: number;
+  results: TmdbMovie[];
+  total_pages: number;
+  total_results: number;
+}
+
+/**
+ * Fetches Top Rated movies from The Movie Database (TMDB) API.
+ * Reads the API key from the NEXT_PUBLIC_TMDB_API_KEY environment variable.
+ * @param page The page number to fetch.
+ * @returns A Promise containing the API response or null in case of error.
+ */
+export async function fetchTmdbTopRatedMovies(page: number = 1): Promise<TmdbTopRatedResponse | null> {
+  const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+  if (!apiKey) {
+    console.error('TMDB API key (NEXT_PUBLIC_TMDB_API_KEY) not found.');
+    return null;
+  }
+
+  // Update the URL to fetch top_rated movies
+  const url = `https://api.themoviedb.org/3/movie/top_rated?api_key=${apiKey}&language=en-US&page=${page}`;
+  console.log(`Fetching top rated movies from TMDB: ${url}`); // Update log message
+
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+
+    if (!response.ok) {
+      console.error(`TMDB API error (Top Rated Movies): ${response.status} ${response.statusText}`); // Update log message
+      return null;
+    }
+
+    // Use the updated interface name
+    const data: TmdbTopRatedResponse = await response.json();
+    return data;
+
+  } catch (error) {
+    console.error("Failed to fetch top rated movies from TMDB:", error); // Update log message
+    return null;
+  }
+}
+
+/**
+ * Helper function to convert TMDB movie data to our internal Movie format.
+ * @param tmdbMovie Raw movie data from TMDB API.
+ * @returns Movie object in our internal format.
+ */
+export function convertTmdbMovieToMovie(tmdbMovie: TmdbMovie): Movie {
+  return {
+    movieId: tmdbMovie.id, // Use TMDB ID as movieId for now, might cause issues if mixing sources
+    tmdbId: tmdbMovie.id,
+    title: tmdbMovie.title,
+    // For genres, we currently don't have a mapping from ID to name readily available
+    // We can either fetch the genre list from TMDB separately or show IDs / placeholder
+    genres: tmdbMovie.genre_ids.join('|'), // Placeholder: Join IDs
+    posterUrl: tmdbMovie.poster_path, // Keep only the path, MovieCard adds base URL
+  };
+}
+
+// TMDB API response type for search results (similar to popular/top-rated)
+interface TmdbSearchResponse {
+  page: number;
+  results: TmdbMovie[]; // Reuses the TmdbMovie interface
+  total_pages: number;
+  total_results: number;
+}
+
+/**
+ * Searches for movies on The Movie Database (TMDB) API.
+ * @param query The search query string.
+ * @param page The page number to fetch.
+ * @returns A Promise containing the search results or null in case of error.
+ */
+export async function searchTmdbMovies(query: string, page: number = 1): Promise<TmdbSearchResponse | null> {
+  const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+  if (!apiKey) {
+    console.error('TMDB API key (NEXT_PUBLIC_TMDB_API_KEY) not found.');
+    return null;
+  }
+
+  // Encode the query parameter
+  const encodedQuery = encodeURIComponent(query.trim());
+  if (!encodedQuery) {
+      return null; // Don't search if query is empty after trimming
+  }
+
+  const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&language=en-US&query=${encodedQuery}&page=${page}&include_adult=false`;
+  console.log(`Searching TMDB movies: ${url}`);
+
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+
+    if (!response.ok) {
+      console.error(`TMDB API error (Search Movies): ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    const data: TmdbSearchResponse = await response.json();
+    return data;
+
+  } catch (error) {
+    console.error("Failed to search movies from TMDB:", error);
     return null;
   }
 }

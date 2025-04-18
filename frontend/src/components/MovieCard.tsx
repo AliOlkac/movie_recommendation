@@ -32,30 +32,34 @@ const MovieCard: React.FC<MovieCardProps> = ({ /* movieId, */ tmdbId, title, gen
 
   return (
     <div 
-      className={`group relative overflow-hidden rounded-xl transition-all duration-300 ${tmdbId ? 'cursor-pointer' : 'cursor-default'}`}
+      className={`group relative overflow-hidden rounded-lg shadow-md transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-yellow-500/30 ${tmdbId ? 'cursor-pointer' : 'cursor-default'} bg-black/10 aspect-[2/3]`} // Arka plana hafif bir renk verelim
       onClick={handleCardClick}
-      style={{ aspectRatio: '2/3' }} // Poster oranını korumak için
+      // style={{ aspectRatio: '2/3' }} // Aspect ratio class ile ayarlandı
     >
       {/* Afiş */}
-      <div className="w-full h-full">
+      <div className="absolute inset-0 transition-opacity duration-300">
         <Image
           src={fullPosterUrl}
           alt={`${title} poster`}
           layout="fill"
-          objectFit="cover" // Resmi kaplamasını sağlar
-          className={`transition-transform duration-500 ${tmdbId ? 'group-hover:scale-110' : ''}`} // Hover efekti
+          objectFit="cover"
+          className={`transition-transform duration-500 ${tmdbId ? 'group-hover:scale-110' : ''}`}
           priority={false}
         />
+        {/* Hafif bir gradyan overlay (isteğe bağlı) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       </div>
       
-      {/* Bilgi Overlay - Glassmorphism Efekti */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/40 backdrop-blur-sm backdrop-filter transition-all duration-300 translate-y-8 group-hover:translate-y-0">
-        <h3 className="text-lg font-semibold text-white mb-1 truncate" title={title}>
+      {/* Bilgi Overlay - Altta, sadece hover'da belirgin */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/50 to-transparent translate-y-full group-hover:translate-y-0 transition-all duration-300 ease-in-out">
+        <h3 className="text-sm font-semibold text-white mb-1 truncate" title={title}>
           {title}
         </h3>
-        <p className="text-xs text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-300 truncate" title={formattedGenres}>
+        {/* Türleri şimdilik göstermeyelim 
+        <p className="text-xs text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 truncate" title={formattedGenres}>
           {formattedGenres || 'N/A'}
-        </p>
+        </p> 
+        */}
         {!tmdbId && (
            <p className="text-xs text-red-400 mt-1">Details unavailable</p>
         )}
