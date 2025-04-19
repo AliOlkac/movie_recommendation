@@ -2,177 +2,362 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { fetchTmdbMovieDetails, TmdbMovieDetails } from '@/lib/api';
+import { Movie, fetchTmdbMovieDetails, TmdbMovieDetails } from '@/lib/api';
 import RatingStars from './RatingStars'; // Ensure this path is correct
-import { FaTimes, FaHeart, FaRegHeart } from 'react-icons/fa'; // Add FaHeart and FaRegHeart
+import { FaTimes, FaHeart, FaRegHeart, FaStar, FaChevronLeft, FaChevronRight, FaInfoCircle } from 'react-icons/fa'; // Add FaHeart, FaRegHeart, FaStar, FaChevronLeft, FaChevronRight, FaInfoCircle
 
 // TMDB image base URL
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'; // Larger image for modal
 
+// Favorites tipini tanımla (MovieList'ten kopyala veya import et)
+interface FavoriteInfo {
+  title: string;
+  posterUrl: string | null;
+}
+interface Favorites {
+  [tmdbId: number]: FavoriteInfo;
+}
+
+// --- Modal Props --- 
 interface MovieModalProps {
-  tmdbId: number | null;
+  // Core props for detail view
+  tmdbId: number | null; // Null olabilir (öneri modu yükleme/hata)
   onClose: () => void;
-  onRate: (tmdbId: number, rating: number) => void; // Ensure this is used correctly
-  initialRating?: number; // Make initialRating optional, default to 0 if not provided
-  isFavorite: boolean; // Add isFavorite prop
-  onToggleFavorite: (tmdbId: number) => void; // Add favorite toggle handler
+  onRate: (tmdbId: number, rating: number) => void;
+  initialRating: number; // Dinamik olarak ayarlanacak
+  isFavorite: boolean;   // Dinamik olarak ayarlanacak
+  onToggleFavorite: (tmdbId: number) => void;
+  
+  // --- Props for Recommendation Mode --- 
+  mode: 'detail' | 'recommendation';
+  recommendationsData: Movie[] | null;
+  isLoadingRecommendations: boolean;
+  recommendationError: string | null;
+  currentRecommendationIndex: number;
+  onNavigateRecommendation: (direction: 'next' | 'prev') => void;
+  onExitRecommendationMode: (selectedMovieId?: number) => void;
 }
 
 const MovieModal: React.FC<MovieModalProps> = ({ 
-  tmdbId, 
-  onClose, 
-  onRate, 
-  initialRating = 0, // Default to 0 if not provided
-  isFavorite, 
-  onToggleFavorite 
+    tmdbId, 
+    onClose, 
+    onRate, 
+    initialRating, 
+    isFavorite, 
+    onToggleFavorite,
+    // Recommendation props
+    mode,
+    recommendationsData,
+    isLoadingRecommendations,
+    recommendationError,
+    currentRecommendationIndex,
+    onNavigateRecommendation,
+    onExitRecommendationMode
 }) => {
+  // --- State for Detail Mode --- 
   const [movieDetails, setMovieDetails] = useState<TmdbMovieDetails | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Initialize currentRating with initialRating from props
-  // Rename handleRatingChange from MovieList as it conflicts here
-  const handleRatingSubmit = (newRating: number) => {
-    if (tmdbId) {
-      onRate(tmdbId, newRating); // Call the onRate passed from MovieList
-    }
-  };
-
-  // Handle clicking the favorite button
-  const handleFavoriteClick = () => {
-    if (tmdbId) {
-      onToggleFavorite(tmdbId);
-    }
-  };
-
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  
+  // --- State for Rating (used in both modes) ---
+  const [currentRating, setCurrentRating] = useState(initialRating);
+  // Reset internal rating state when the initialRating prop changes (new movie selected)
   useEffect(() => {
-    if (tmdbId !== null) {
-      const loadDetails = async () => {
-        setLoading(true);
-        setError(null);
-        setMovieDetails(null); // Clear previous details
-        try {
-          const details = await fetchTmdbMovieDetails(tmdbId);
-          setMovieDetails(details);
-        } catch (err) {
-          console.error("Error fetching movie details:", err);
-          setError('Failed to load movie details.');
-        } finally {
-          setLoading(false);
-        }
-      };
-      loadDetails();
-    } else {
-      // Reset state if tmdbId becomes null (modal closed)
-      setMovieDetails(null);
-      setLoading(false);
-      setError(null);
-    }
-  }, [tmdbId]);
+      setCurrentRating(initialRating);
+  }, [initialRating]);
 
-  // Prevent rendering if tmdbId is null (modal is not open)
-  if (tmdbId === null) {
-    return null;
+  // --- Effect to Fetch Movie Details (Only in Detail Mode) ---
+  useEffect(() => {
+    // Sadece 'detail' modunda ve geçerli bir tmdbId varsa detayları çek
+    if (mode === 'detail' && tmdbId !== null && tmdbId > 0) { 
+      setIsLoadingDetails(true);
+      setDetailError(null);
+      setMovieDetails(null); // Önceki veriyi temizle
+      
+      fetchTmdbMovieDetails(tmdbId)
+        .then(data => {
+          if (data) {
+            setMovieDetails(data);
+          } else {
+            setDetailError('Could not load movie details.');
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching movie details:", err);
+          setDetailError('An error occurred while fetching details.');
+        })
+        .finally(() => {
+          setIsLoadingDetails(false);
+        });
+    } else if (mode === 'detail' && tmdbId === null) {
+        // Detail modunda ama ID null ise (olmamalı ama hata durumu)
+        setDetailError('Movie ID is missing.');
+        setIsLoadingDetails(false);
+        setMovieDetails(null);
+    }
+  }, [tmdbId, mode]); // tmdbId veya mode değiştiğinde tekrar çalıştır
+
+  // --- Rating Handler (used in both modes) ---
+  const handleRatingSubmit = () => {
+    let idToRate: number | null = null;
+    if (mode === 'detail') {
+        idToRate = tmdbId;
+    } else if (mode === 'recommendation' && recommendationsData) {
+        idToRate = recommendationsData[currentRecommendationIndex]?.tmdbId;
+    }
+    
+    if (idToRate && currentRating > 0) {
+      console.log(`Submitting rating: tmdbId=${idToRate}, rating=${currentRating}`); // Debug
+      onRate(idToRate, currentRating);
+      // **Attempt to force visual update:**
+      // Although parent state update should trigger prop change,
+      // let's ensure internal state reflects submitted value immediately.
+      // Note: This might cause a double update if parent update is fast,
+      // but can help with perceived responsiveness.
+      // setCurrentRating(currentRating); // Re-setting to the same value might not trigger re-render
+      // Maybe trigger a re-render indirectly? Or just rely on parent state update.
+      // For now, let's rely on the parent update via props.
+    } else {
+        console.warn("Rating not submitted: No ID or rating=0");
+    }
+  };
+
+  // --- Determine Current Movie Info (for Recommendation Mode) ---
+  const currentRecommendation = (mode === 'recommendation' && recommendationsData) 
+                                ? recommendationsData[currentRecommendationIndex] 
+                                : null;
+
+  // --- Render Logic --- 
+  // Don't render if not open (tmdbId is null AND not in recommendation mode showing loading/error)
+  if (tmdbId === null && (mode === 'detail' || (mode === 'recommendation' && !isLoadingRecommendations && !recommendationError))) {
+      return null;
   }
 
   return (
-    // Modal Backdrop - More subtle blur, lighter background if needed
+    // Modal Backdrop
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 transition-opacity duration-300"
-      onClick={onClose} 
-      style={{ backdropFilter: 'blur(5px)' }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 transition-opacity duration-300"
+      onClick={onClose} // Backdrop click closes the modal
     >
-      {/* Modal Content - Apply gold theme and glassmorphism */}
+      {/* Modal Content */} 
       <div 
-        className="bg-gradient-to-br from-yellow-900/20 via-black/30 to-yellow-900/20 backdrop-blur-xl rounded-xl shadow-2xl max-w-3xl w-full overflow-hidden relative border border-yellow-600/30"
-        onClick={(e) => e.stopPropagation()}
-        style={{ backdropFilter: 'blur(16px)' }}
+        className="bg-gradient-to-br from-gray-900/10 via-black/20 to-gray-900/10 backdrop-blur-xl rounded-xl shadow-2xl max-w-md md:max-w-lg w-full max-h-[95vh] border border-gray-600/20 flex flex-col overflow-hidden relative"
+        onClick={(e) => e.stopPropagation()} // Prevent backdrop click when clicking content
       >
-        {/* Close Button - Gold accent on hover */}
-        <button 
-          onClick={onClose}
-          className="absolute top-3 right-3 text-yellow-100/60 hover:text-yellow-300 bg-black/40 hover:bg-black/60 rounded-full p-2 transition-colors z-10"
-          aria-label="Close modal"
-        >
-          <FaTimes size={18} />
-        </button>
+        {/* Header - Consistent Close Button */} 
+        <div className="flex justify-end items-center p-3 absolute top-0 right-0 z-20">
+          <button 
+            onClick={onClose}
+            className="text-gray-300/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-2 transition-colors"
+            aria-label="Close modal"
+          >
+            <FaTimes size={18} />
+          </button>
+        </div>
 
-        {/* Loading State - Gold spinner */}
-        {loading && (
-          <div className="flex justify-center items-center h-96">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
-          </div>
-        )}
-
-        {/* Error State - Adjust button color */}
-        {error && !loading && (
-          <div className="flex flex-col justify-center items-center h-96 text-center p-6">
-            <p className="text-red-400 text-lg mb-4">{error}</p>
-            <button 
-              onClick={onClose}
-              className="bg-yellow-600 text-black px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        )}
-
-        {/* Content: Movie Details - Update text colors and layout */}
-        {!loading && !error && movieDetails && (
-          <div className="flex flex-col md:flex-row max-h-[85vh]">
-            {/* Left Side: Poster */}
-            <div className="md:w-1/3 flex-shrink-0 bg-black/20">
-              <Image 
-                src={movieDetails.poster_path ? `${TMDB_IMAGE_BASE_URL}${movieDetails.poster_path}` : '/images/default-poster.png'}
-                alt={`${movieDetails.title} Poster`}
-                width={500}
-                height={750}
-                className="w-full h-auto object-cover md:rounded-l-lg"
-                priority // Prioritize loading the poster image
-              />
-            </div>
-
-            {/* Right Side: Details, Rating, Favorite - Scrollable content */}
-            <div className="md:w-2/3 p-6 md:p-8 text-yellow-50 flex flex-col justify-between overflow-y-auto">
-              <div>
-                {/* Title and Year - Use gold color */}
-                <h2 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500">
-                    {movieDetails.title} 
-                    <span className="text-xl font-light text-yellow-200/80 ml-2">({movieDetails.release_date ? new Date(movieDetails.release_date).getFullYear() : 'N/A'})</span>
-                </h2>
-                {/* Genres */}
-                <p className="text-sm text-yellow-100/70 mb-4">
-                  {movieDetails.genres?.map(g => g.name).join(', ') || 'No genres listed'}
-                </p>
-                {/* Overview */}
-                <p className="text-base text-yellow-50/90 mb-6">
-                  {movieDetails.overview || 'No overview available.'}
-                </p>
-              </div>
-              
-              {/* Rating and Favorite Section - Adjust border, button colors */}
-              <div className="mt-auto flex items-center justify-between pt-6 border-t border-yellow-600/20">
-                {/* Rating Stars */}
-                <div className="flex flex-col items-start">
-                  <span className="text-sm text-yellow-100/70 mb-1">Your Rating:</span>
-                  <RatingStars 
-                    initialRating={initialRating} 
-                    onRatingChange={handleRatingSubmit} 
-                    starColor="text-yellow-400" // Pass gold color to stars
-                  />
+        {/* --- Body (Conditional Rendering based on mode) --- */} 
+        <div className="overflow-y-auto flex-grow flex flex-col items-center justify-center relative pt-12 pb-6 px-4 md:px-6">
+        
+          {/* ====== Recommendation Mode ====== */} 
+          {mode === 'recommendation' && (
+            <>
+              {isLoadingRecommendations && (
+                  <div className="flex flex-col justify-center items-center h-full">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400 mb-4"></div>
+                      <p className="text-yellow-100/80">Getting recommendations...</p>
+                  </div>
+              )}
+              {recommendationError && !isLoadingRecommendations && (
+                   <div className="flex flex-col justify-center items-center h-full text-center">
+                      <p className="text-red-400 text-lg mb-4">{recommendationError}</p>
+                      {/* Optional: Add a retry button? */}
+                      <button 
+                          onClick={onClose} // Close on error for now
+                          className="bg-yellow-600 text-black px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
+                      >
+                          Close
+                      </button>
+                  </div>
+              )}
+              {!isLoadingRecommendations && !recommendationError && currentRecommendation && (
+                  <div className='w-full flex flex-col items-center'>
+                      {/* Poster */} 
+                      <div className='relative w-48 h-72 md:w-60 md:h-90 mb-4 rounded-lg overflow-hidden shadow-lg border-2 border-yellow-600/30'>
+                          {currentRecommendation.posterUrl ? (
+                              <Image 
+                                  src={`${TMDB_IMAGE_BASE_URL}${currentRecommendation.posterUrl}`}
+                                  alt={`${currentRecommendation.title} poster`}
+                                  layout='fill'
+                                  objectFit='cover'
+                                  priority={true}
+                              />
+                          ) : (
+                              <div className='w-full h-full bg-black/30 flex items-center justify-center text-yellow-500/50'>
+                                  <FaStar size={50}/>
+                              </div>
+                          )}
+                      </div>
+                      {/* Movie Info */} 
+                      <div className='text-center mb-4 px-4'>
+                          <h3 className='text-lg md:text-xl font-bold text-yellow-100 truncate' title={currentRecommendation.title}>
+                              {currentRecommendation.title}
+                          </h3>
+                          <p className='text-xs md:text-sm text-yellow-200/70 truncate' title={currentRecommendation.genres?.split('|').join(', ') || ''}>
+                              {currentRecommendation.genres?.split('|').join(', ') || 'No genres available'}
+                          </p>
+                      </div>
+                      {/* Rating & Favorite Buttons for Recommendation */} 
+                      <div className="flex flex-col items-center space-y-3 mb-4">
+                          <RatingStars 
+                              key={`rec-stars-${currentRecommendation.tmdbId}`} 
+                              count={5} 
+                              value={currentRating} 
+                              onChange={setCurrentRating} 
+                              size={28} 
+                              activeColor="#ffd700" 
+                          />
+                          <button 
+                              onClick={handleRatingSubmit}
+                              disabled={currentRating === 0}
+                              className={`px-5 py-1.5 rounded-md text-sm font-medium transition-colors ${currentRating > 0 ? 'bg-yellow-600 hover:bg-yellow-500 text-black' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                          >
+                              {initialRating > 0 ? 'Update Rating' : 'Submit Rating'}
+                          </button>
+                      </div>
+                      <div className='flex space-x-4'>
+                           {/* Favorite Button */} 
+                          <button 
+                              onClick={() => onToggleFavorite(currentRecommendation.tmdbId!)}
+                              className={`flex items-center px-4 py-2 rounded-md transition-colors text-sm ${isFavorite ? 'bg-pink-600 hover:bg-pink-500 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-200'}`}
+                              title={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                          >
+                              {isFavorite ? <FaHeart className='mr-2'/> : <FaRegHeart className='mr-2'/>} Favorite
+                          </button>
+                          {/* Button to view details (exits recommendation mode) */} 
+                          <button 
+                              onClick={() => onExitRecommendationMode(currentRecommendation.tmdbId!)} 
+                              className='flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors text-sm'
+                              title='View Full Details'
+                          >
+                              <FaInfoCircle className='mr-2'/> View Details
+                          </button>
+                      </div>
+                  </div>
+              )}
+              {/* Navigation Arrows */} 
+              {!isLoadingRecommendations && !recommendationError && recommendationsData && recommendationsData.length > 1 && (
+                  <>
+                      <button 
+                          onClick={(e) => { e.stopPropagation(); onNavigateRecommendation('prev'); }}
+                          className='absolute top-1/2 left-1 md:left-2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-yellow-300/70 hover:text-yellow-200 rounded-full p-2 z-30 transition-colors'
+                          aria-label='Previous recommendation'
+                      >
+                          <FaChevronLeft size={18} />
+                      </button>
+                      <button 
+                          onClick={(e) => { e.stopPropagation(); onNavigateRecommendation('next'); }}
+                          className='absolute top-1/2 right-1 md:right-2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-yellow-300/70 hover:text-yellow-200 rounded-full p-2 z-30 transition-colors'
+                          aria-label='Next recommendation'
+                      >
+                          <FaChevronRight size={18} />
+                      </button>
+                      {/* Index Indicator */}
+                      <div className='absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-yellow-100/50 bg-black/30 px-1.5 py-0.5 rounded'>
+                          {currentRecommendationIndex + 1} / {recommendationsData.length}
+                      </div>
+                  </>
+              )}
+            </>
+          )}
+          
+          {/* ====== Detail Mode ====== */} 
+          {mode === 'detail' && (
+            <>
+              {isLoadingDetails && (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-400"></div>
                 </div>
-                {/* Favorite Button - Adjust colors */}
-                <button
-                  onClick={handleFavoriteClick}
-                  className={`p-3 rounded-full transition-colors duration-200 ${isFavorite ? 'bg-pink-500/30 text-pink-300 hover:bg-pink-500/40' : 'bg-white/10 text-yellow-100/60 hover:bg-white/20 hover:text-pink-300'}`}
-                  aria-label={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
-                  title={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
-                >
-                  {isFavorite ? <FaHeart size={20} /> : <FaRegHeart size={20} />}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+              )}
+              {detailError && !isLoadingDetails && (
+                 <div className="flex flex-col justify-center items-center h-64 text-center">
+                    <p className="text-red-400 text-lg mb-4">{detailError}</p>
+                    <button 
+                      onClick={onClose} 
+                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 transition-colors"
+                    >
+                      Close
+                    </button>
+                 </div>
+              )}
+              {!isLoadingDetails && !detailError && movieDetails && (
+                // --- REVERT TO OLDER LAYOUT STRUCTURE (APPROXIMATION) --- 
+                // Use flex-row for side-by-side layout on medium screens and up
+                <div className="w-full flex flex-col md:flex-row">
+                  {/* Left Side: Poster */}
+                  <div className='relative w-full md:w-1/3 flex-shrink-0 mb-4 md:mb-0 md:mr-6 flex justify-center md:justify-start'>
+                    <div className='relative w-48 h-72 md:w-full md:h-auto md:aspect-[2/3] rounded-lg overflow-hidden shadow-lg border-2 border-blue-600/30'>
+                      {movieDetails.poster_path ? (
+                          <Image 
+                              src={`${TMDB_IMAGE_BASE_URL}${movieDetails.poster_path}`}
+                              alt={`${movieDetails.title} poster`}
+                              layout='fill'
+                              objectFit='cover'
+                              priority={true}
+                          />
+                      ) : (
+                         <div className='w-full h-full bg-black/30 flex items-center justify-center text-blue-500/50'>
+                             <FaStar size={50}/>
+                         </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Right Side: Details, Rating, Favorite */} 
+                  <div className="w-full md:w-2/3 flex flex-col items-center md:items-start">
+                      {/* Title, Genres, Release Date */} 
+                      <div className='text-center md:text-left mb-2 px-4 md:px-0'>
+                        <h3 className='text-xl md:text-2xl font-bold text-blue-100'>{movieDetails.title}</h3>
+                        <p className='text-sm text-blue-200/80 mt-1'>
+                            {movieDetails.genres?.map(g => g.name).join(', ') || 'No genres'}
+                        </p>
+                        <p className='text-xs text-blue-300/60 mt-1'>{movieDetails.release_date}</p>
+                      </div>
+                      {/* Overview */} 
+                      <p className="text-sm text-gray-300 mb-4 max-w-prose text-center md:text-left px-4 md:px-0">
+                          {movieDetails.overview || 'No overview available.'}
+                      </p>
+                      {/* Rating & Favorite Buttons */} 
+                      <div className="flex flex-col items-center md:items-start space-y-3 mt-auto pt-4 border-t border-gray-700/50 w-full">
+                          <RatingStars 
+                              key={`detail-stars-${tmdbId}`} 
+                              count={5} 
+                              value={currentRating} 
+                              onChange={setCurrentRating} 
+                              size={28} 
+                              activeColor="#ffd700" 
+                          />
+                          <div className='flex space-x-3'>
+                              <button 
+                                  onClick={handleRatingSubmit}
+                                  disabled={currentRating === 0}
+                                  className={`px-5 py-1.5 rounded-md text-sm font-medium transition-colors ${currentRating > 0 ? 'bg-yellow-600 hover:bg-yellow-500 text-black' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                              >
+                                  {initialRating > 0 ? 'Update Rating' : 'Submit Rating'}
+                              </button>
+                              <button 
+                                  onClick={() => onToggleFavorite(tmdbId!)} 
+                                  className={`flex items-center px-4 py-1.5 rounded-md transition-colors text-xs ${isFavorite ? 'bg-pink-600 hover:bg-pink-500 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-200'}`}
+                                  title={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                              >
+                                  {isFavorite ? <FaHeart className='mr-1.5'/> : <FaRegHeart className='mr-1.5'/>} Favorite
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div> 
       </div>
     </div>
   );

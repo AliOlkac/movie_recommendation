@@ -28,7 +28,10 @@ class CollaborativeFilteringModel:
         self.movie_titles = None # movieId -> film başlığı eşleşmesi için
         self.user_vectors = None # Kullanıcı latent vektörleri
         self.item_vectors = None # Film latent vektörleri
-        self.user_rated_movies = None # Kullanıcıların oyladığı filmler {user_id: {movie_id, ...}}
+        self.user_rated_movies_with_ratings = None # Kullanıcıların oyladığı filmler ve verdikleri puanlar {user_id: {movie_id: rating}}
+        self.global_average_rating = None # Tüm veri setindeki ortalama puan
+        self.movie_map_inv = None # index -> movieId
+        self.user_map_inv = None # index -> userId
 
     def _create_user_movie_data(self, df):
         """
@@ -48,11 +51,15 @@ class CollaborativeFilteringModel:
         
         self.movie_titles = df.set_index('movieId')['title'].drop_duplicates().to_dict()
         
-        # Kullanıcıların oyladığı filmleri map olarak oluşturalım
-        print("Kullanıcıların oyladığı filmler haritası oluşturuluyor...")
-        # Gruplama işlemi büyük veri setinde zaman alabilir
-        self.user_rated_movies = df.groupby('userId')['movieId'].agg(set).to_dict()
-        print("Oylanan filmler haritası oluşturuldu.")
+        # Global ortalama puanı hesaplama
+        self.global_average_rating = df['rating'].mean()
+        print(f"Global ortalama puan: {self.global_average_rating:.2f}")
+
+        # Kullanıcıların oyladığı filmleri ve puanları saklayan sözlük
+        print("Kullanıcıların oyladığı filmler ve puanlar haritası oluşturuluyor...")
+        grouped = df.groupby('userId')[['movieId', 'rating']].apply(lambda x: dict(zip(x['movieId'], x['rating']))).to_dict()
+        self.user_rated_movies_with_ratings = grouped
+        print(f"{len(self.user_rated_movies_with_ratings)} kullanıcı için oylama geçmişi (puanlarla) oluşturuldu.")
 
         return sparse_matrix
 
@@ -97,7 +104,8 @@ class CollaborativeFilteringModel:
         score_df = pd.DataFrame({'movieId': movie_ids, 'score': scores})
 
         # Kullanıcının zaten oy verdiği filmleri filtrele
-        rated_movies_set = self.user_rated_movies.get(user_id, set())
+        rated_movies_dict = self.user_rated_movies_with_ratings.get(user_id, {})
+        rated_movies_set = set(rated_movies_dict.keys())
         recommendations = score_df[~score_df['movieId'].isin(rated_movies_set)]
 
         # En yüksek skora sahip N filmi al
@@ -121,136 +129,145 @@ class CollaborativeFilteringModel:
         k_neighbors: Benzerlik için dikkate alınacak komşu sayısı.
         rating_threshold: Komşuların bir filmi önermesi için vermesi gereken min puan.
         """
-        if self.item_vectors is None or self.user_vectors is None or not self.movie_map or not self.user_map or not self.user_rated_movies:
-            print("Hata: Model vektörleri veya haritalamalar yüklenmemiş.")
+        if self.item_vectors is None or self.user_vectors is None or not self.movie_map or not self.user_map or not self.user_rated_movies_with_ratings or self.global_average_rating is None:
+            print("Hata: Model vektörleri veya haritalamalar yüklenmemiş veya global ortalama yüklenmemiş.")
             return []
 
         print(f"Kullanıcı tabanlı öneriler hesaplanıyor (k={k_neighbors}, threshold={rating_threshold}): {ratings_dict}")
 
         # 1. Geçerli movieId'leri ve normalize edilmiş puanları al
-        valid_ratings = []
+        valid_ratings_normalized = []
         rated_movie_ids = set()
-        average_rating = 3.0 # Normalizasyon için ortalama puan varsayımı
         for movie_id, rating in ratings_dict.items():
-            if movie_id in self.movie_map:
-                # Puanı normalize et (ortalama etrafında)
-                normalized_rating = float(rating) - average_rating
-                valid_ratings.append((self.movie_map[movie_id], normalized_rating))
-                rated_movie_ids.add(movie_id)
-            # else: Modelde olmayan filmleri sessizce atla
+            try:
+                movie_id = int(movie_id) # Gelen ID string olabilir, int'e çevir
+                if movie_id in self.movie_map:
+                    item_index = self.movie_map[movie_id]
+                    # Puanı global ortalamaya göre normalize et
+                    normalized_rating = float(rating) - self.global_average_rating
+                    valid_ratings_normalized.append((item_index, normalized_rating))
+                    rated_movie_ids.add(movie_id)
+                # else: Modelde olmayan filmleri sessizce atla
+            except (ValueError, TypeError):
+                print(f"Uyarı: Geçersiz film ID'si veya puan formatı: {movie_id} -> {rating}. Atlanıyor.")
+                continue # Geçersiz veriyle devam etme
 
-        if not valid_ratings:
-            print("Hata: Geçerli film puanı bulunamadı.")
+        if not valid_ratings_normalized:
+            print("Hata: Yeni kullanıcının puanladığı ve modelde bulunan geçerli film bulunamadı.")
             return []
 
         # 2. Geçici kullanıcı vektörünü oluştur (normalize puanlarla ağırlıklı ortalama)
         temp_user_vector = np.zeros(self.n_components)
-        total_weight = 0 # Ağırlıkların mutlak değerini kullanalım
-        for item_index, norm_rating in valid_ratings:
-            weight = abs(norm_rating) # Ağırlık olarak mutlak değeri alalım
-            temp_user_vector += norm_rating * self.item_vectors[item_index, :]
-            total_weight += weight
+        total_absolute_weight = 0 # Ağırlıkların mutlak değeri toplamı (normalize etmek için)
+        for item_index, norm_rating in valid_ratings_normalized:
+            # Ağırlık olarak normalize puanın mutlak değerini kullanabiliriz
+            # Böylece hem yüksek hem de düşük puanlar vektör yönünü etkiler
+            weight = abs(norm_rating)
+            temp_user_vector += norm_rating * self.item_vectors[item_index, :] # Vektörü normalize puana göre ölçekle ve topla
+            total_absolute_weight += weight
 
-        if total_weight > 0:
-            # Ortalamayı almak yerine, belki de sadece yönü korumak yeterli?
-            # Ya da normalize etmek?
-            # Şimdilik ağırlıklı toplamı kullanalım, bölmeyelim?
-            # temp_user_vector /= total_weight # Vektörü normalize edebiliriz veya etmeyebiliriz.
-             # Vektörü normalize edelim (uzunluğunu 1 yapalım) - kosinüs benzerliği için daha iyi
-             norm = np.linalg.norm(temp_user_vector)
-             if norm > 0:
-                 temp_user_vector /= norm
-             else:
-                 print("Uyarı: Geçici kullanıcı vektörü sıfır.")
-                 return [] # Sıfır vektörüyle benzerlik hesaplanamaz
+        # Vektörü normalize et (uzunluğunu 1 yap) - kosinüs benzerliği için önemlidir.
+        if total_absolute_weight > 0:
+            norm = np.linalg.norm(temp_user_vector)
+            if norm > 0:
+                temp_user_vector /= norm # Vektörü birim vektöre dönüştür
+            else:
+                # Bu durum, normalize puanların ağırlıklı toplamının sıfır vektörü vermesiyle oluşabilir (nadir)
+                print("Uyarı: Geçici kullanıcı vektörü sıfır normuna sahip. Benzerlik hesaplanamaz.")
+                return []
         else:
-            print("Uyarı: Puan ağırlıkları toplamı sıfır.")
+            # Bu durum, tüm normalize puanların 0 olmasıyla oluşabilir (tüm puanlar global ortalamaya eşitse)
+            print("Uyarı: Geçici kullanıcı vektörü için ağırlık toplamı sıfır. Benzerlik hesaplanamaz.")
             return []
 
         # 3. Benzer Kullanıcıları Bulma (Kosinüs Benzerliği)
         # temp_user_vector'ü (1, n_components) şekline getir
         temp_user_vector_reshaped = temp_user_vector.reshape(1, -1)
         
-        # Tüm mevcut kullanıcı vektörleriyle benzerliği hesapla
+        # Geçici vektör ile tüm mevcut kullanıcı vektörleri arasındaki kosinüs benzerliğini hesapla
+        # Sonuç: (1, n_users) boyutlu bir matris
         similarities = cosine_similarity(temp_user_vector_reshaped, self.user_vectors)
         
-        # Benzerlik skorlarını (kullanıcı_index, benzerlik) şeklinde al
+        # Benzerlik skorlarını (kullanıcı_index, benzerlik) çiftleri olarak al
         user_similarity_scores = list(enumerate(similarities[0]))
         
-        # Benzerliğe göre sırala (en yüksekten düşüğe)
+        # Benzerliğe göre büyükten küçüğe sırala
         user_similarity_scores.sort(key=lambda x: x[1], reverse=True)
         
-        # En benzer K komşuyu seç (kendisi hariç - ama zaten yeni kullanıcı)
+        # En benzer K komşuyu seç (ilk K tanesi)
         top_k_neighbors = user_similarity_scores[:k_neighbors]
         
-        # Komşu user_index'lerini ve benzerliklerini al
-        neighbor_indices = [idx for idx, sim in top_k_neighbors]
-        # neighbor_similarities = {idx: sim for idx, sim in top_k_neighbors} # Benzerlikleri sakla (ağırlıklandırma için?)
+        print(f"En benzer {len(top_k_neighbors)} komşu bulundu (max {k_neighbors}).")
 
-        # user_map'in tersini oluştur: index -> userId
-        user_map_inv = {v: k for k, v in self.user_map.items()}
-
-        print(f"En benzer {len(neighbor_indices)} komşu bulundu.")
-
-        # 4. Komşu Filmlerini Toplama
+        # 4. Komşuların Puanlarına Göre Film Skorlarını Hesaplama
         recommended_movie_scores = defaultdict(float) # {movieId: toplam_benzerlik_skoru}
         recommendation_counts = defaultdict(int)    # {movieId: öneren_komşu_sayısı}
         
-        for neighbor_idx in neighbor_indices:
-            neighbor_user_id = user_map_inv.get(neighbor_idx)
+        print("\n--- Komşu Analizi (neighbor_idx, similarity, rated_count_above_threshold) ---") # Debug
+        for neighbor_idx, neighbor_similarity in top_k_neighbors:
+            if neighbor_similarity <= 0: 
+                continue
+            
+            neighbor_user_id = self.user_map_inv.get(neighbor_idx) # index -> userId
             if neighbor_user_id is None:
                 continue
             
-            neighbor_similarity = similarities[0][neighbor_idx] # Komşunun benzerlik skoru
+            neighbor_ratings = self.user_rated_movies_with_ratings.get(neighbor_user_id, {})
             
-            # Bu komşunun puanladığı filmleri al (self.user_rated_movies'den alınmalı ama puan yok)
-            # Bunun yerine eğitime kullanılan orijinal veriden almak daha doğru olur.
-            # Şimdilik bu veri setinin (df) burada olmadığını varsayalım.
-            # Geçici çözüm: user_rated_movies setini kullanalım, ama puan bilgisi eksik.
-            # Bu nedenle sadece komşunun oyladığı filmleri bulup, benzerlikle ağırlıklandıralım.
-            # Daha iyi yaklaşım: fit sırasında {userId: {movieId: rating}} sözlüğü oluşturmak.
+            rated_count_above_threshold = 0 # Debug
+            for movie_id, rating in neighbor_ratings.items():
+                if movie_id in rated_movie_ids:
+                    continue
+                
+                if rating < rating_threshold:
+                    continue
+                
+                # --- SKORLAMA DEĞİŞİKLİĞİ --- 
+                # Filme ait skora komşunun sadece BENZERLİK skorunu ekle.
+                # Komşunun filme verdiği puanı (normalize edilmiş) kullanmıyoruz.
+                recommended_movie_scores[movie_id] += neighbor_similarity 
+                recommendation_counts[movie_id] += 1
+                rated_count_above_threshold += 1 # Debug
             
-            neighbor_rated_set = self.user_rated_movies.get(neighbor_user_id, set())
-            
-            for movie_id in neighbor_rated_set:
-                # Yeni kullanıcının zaten puanladığı filmleri atla
-                if movie_id not in rated_movie_ids:
-                    # Filmin toplam skoruna komşunun benzerliğini ekle
-                    recommended_movie_scores[movie_id] += neighbor_similarity
-                    recommendation_counts[movie_id] += 1
+            # Debug: Her komşu için bilgi yazdır
+            # if rated_count_above_threshold > 0:
+            #     print(f"  Komşu Idx: {neighbor_idx}, Benzerlik: {neighbor_similarity:.4f}, Önerdiği Film Sayısı (>{rating_threshold}): {rated_count_above_threshold}")
 
         if not recommended_movie_scores:
-             print("Komşulardan önerilebilecek yeni film bulunamadı.")
+             print("Filtreleme sonrası komşulardan önerilebilecek yeni film bulunamadı.")
              return []
 
-        # 5. Filtreleme ve Sıralama
-        # Potansiyel önerileri DataFrame'e dönüştür
-        recs_df = pd.DataFrame(recommended_movie_scores.items(), columns=['movieId', 'score'])
-        recs_df['count'] = recs_df['movieId'].map(recommendation_counts)
-        
-        # Belki sadece belirli sayıda komşu tarafından önerilenleri al?
-        # min_neighbors = 2
-        # recs_df = recs_df[recs_df['count'] >= min_neighbors]
-        
-        # Skora göre sırala
-        recs_df = recs_df.sort_values(by='score', ascending=False)
+        # 5. Skorları Hesapla ve Sırala (Artık sadece toplama ve sıralama)
+        final_recommendations = []
+        # print("\n--- Ham Öneri Skorları (movieId: {total_similarity_score}, count) ---") 
+        for movie_id, total_similarity_score in recommended_movie_scores.items():
+            # Final listeye movieId, toplam benzerlik skoru ve sayacı ekle
+            final_recommendations.append({
+                'movieId': movie_id,
+                'score': total_similarity_score, # Doğrudan toplam benzerlik skorunu kullan
+                'count': recommendation_counts[movie_id]
+            })
+
+        if not final_recommendations:
+             print("Öneriye dönüştürülecek film bulunamadı (beklenmedik durum).")
+             return []
+             
+        # Toplam benzerlik skoruna göre büyükten küçüğe sırala
+        final_recommendations.sort(key=lambda x: x['score'], reverse=True)
         
         # En iyi N tanesini al
-        top_recommendations = recs_df.head(n_recommendations)
+        top_recommendations_data = final_recommendations[:n_recommendations]
 
         # 6. Sonuçları Formatla
-        # Film başlıklarını ekle
-        top_recommendations['title'] = top_recommendations['movieId'].map(self.movie_titles)
+        recs_df = pd.DataFrame(top_recommendations_data)
+        recs_df['title'] = recs_df['movieId'].map(self.movie_titles)
+        recs_df = recs_df.dropna(subset=['title'])
 
-        print(f"Kullanıcı tabanlı öneriler:")
-        print(top_recommendations[['movieId', 'title', 'score', 'count']])
+        print(f"\nYeni kullanıcı için bulunan öneriler (Toplam Benzerlik Skoruna Göre):") # Başlığı güncelle
+        print(recs_df[['movieId', 'title', 'score', 'count']])
         
-        # Eksik başlıkları doldur (olmamalı ama garanti olsun)
-        top_recommendations = top_recommendations.dropna(subset=['title'])
-
-        # (movieId, title, score) tuple listesi döndür
-        # Skoru normalize edebiliriz veya ham bırakabiliriz. Şimdilik ham bırakalım.
-        return list(top_recommendations[['movieId', 'title', 'score']].itertuples(index=False, name=None))
+        # (movieId, title, score) tuple listesi döndür (skor artık toplam benzerlik)
+        return list(recs_df[['movieId', 'title', 'score']].itertuples(index=False, name=None))
 
     def get_all_item_ids(self):
         """Modelin bildiği tüm geçerli item (movie) ID'lerini döndürür."""
@@ -262,29 +279,30 @@ class CollaborativeFilteringModel:
         """
         Eğitilmiş modeli, vektörleri ve haritaları dosyaya kaydeder.
         """
-        # Model yerine sadece vektörleri kaydedelim (model nesnesi bazen sorun çıkarabilir)
+        # Kaydetmeden önce tüm gerekli bileşenlerin var olduğundan emin ol
         if self.user_vectors is None or self.item_vectors is None or \
            self.user_map is None or self.movie_map is None or \
-           self.movie_titles is None or self.user_rated_movies is None:
-            print("Hata: Model veya gerekli bileşenler eğitilmemiş/oluşturulmamış.")
+           self.user_rated_movies_with_ratings is None or self.global_average_rating is None:
+            print("Hata: Model tam olarak eğitilmemiş veya bazı bileşenler eksik. Kaydedilemiyor.")
             return
 
         print(f"Model verileri şuraya kaydediliyor: {filepath}")
         model_data = {
-            # 'model': self.model, # Sadece SVD nesnesini değil, bileşenleri kaydedelim
             'user_vectors': self.user_vectors,
-            'item_vectors': self.item_vectors, # Aslında self.model.components_.T
+            'item_vectors': self.item_vectors,
             'user_map': self.user_map,
             'movie_map': self.movie_map,
-            'movie_titles': self.movie_titles,
-            'user_rated_movies': self.user_rated_movies,
-            'n_components': self.n_components, # Bilgi amaçlı
-            # 'random_state': self.random_state, # Buna gerek yok
-            # 'user_movie_matrix_shape': self.user_movie_matrix_shape # Gerek yok
+            'user_rated_movies_with_ratings': self.user_rated_movies_with_ratings,
+            'global_average_rating': self.global_average_rating,
+            'n_components': self.n_components,
+            'svd_model_components': self.model.components_,
+            'movie_map_inv': self.movie_map_inv,
+            'user_map_inv': self.user_map_inv,
+            'movie_titles': self.movie_titles
         }
         try:
-            joblib.dump(model_data, filepath)
-            print("Model verileri başarıyla kaydedildi.")
+            joblib.dump(model_data, filepath, compress=3)
+            print(f"Model verileri başarıyla kaydedildi: {filepath}")
         except Exception as e:
             print(f"Model verileri kaydedilirken hata oluştu: {e}")
 
@@ -295,38 +313,59 @@ class CollaborativeFilteringModel:
         """
         print(f"Model verileri şuradan yükleniyor: {filepath}")
         try:
+            # joblib.load ile verileri dosyadan oku
             model_data = joblib.load(filepath)
-            required_keys = ['user_vectors', 'item_vectors', 'user_map', 'movie_map', \
-                             'movie_titles', 'user_rated_movies', 'n_components']
+            
+            # Yüklenen veride gerekli tüm anahtarların olup olmadığını kontrol et
+            required_keys = [
+                'user_vectors', 'item_vectors', 'user_map', 'movie_map', 'movie_map_inv', # movie_map_inv eksikti, onu da ekleyelim
+                'user_map_inv', 'movie_titles', 'user_rated_movies_with_ratings', # movie_titles eklendi
+                'global_average_rating', 'n_components'
+            ]
             if not all(key in model_data for key in required_keys):
-                print("Hata: Model dosyası eksik veya bozuk.")
+                missing_keys = [key for key in required_keys if key not in model_data]
+                print(f"Hata: Model dosyası eksik anahtarlar içeriyor: {missing_keys}. Yüklenemiyor.")
                 return None
 
-            # Yeni bir model nesnesi oluştur (n_components bilgisiyle)
+            # Yüklenen n_components değeriyle yeni bir sınıf örneği (instance) oluştur
             instance = cls(n_components=model_data['n_components'])
             
-            # Yüklenen verileri nesneye ata
-            # instance.model = model_data['model'] # Modeli değil, vektörleri yükledik
+            # Yüklenen verileri oluşturulan nesnenin ilgili alanlarına ata
             instance.user_vectors = model_data['user_vectors']
             instance.item_vectors = model_data['item_vectors']
             instance.user_map = model_data['user_map']
             instance.movie_map = model_data['movie_map']
-            instance.movie_titles = model_data['movie_titles']
-            instance.user_rated_movies = model_data['user_rated_movies']
+            instance.movie_map_inv = model_data.get('movie_map_inv') # .get() ile eksik olma ihtimaline karşı None döner
+            instance.user_map_inv = model_data.get('user_map_inv')   # .get() ile eksik olma ihtimaline karşı None döner
+            instance.movie_titles = model_data['movie_titles'] # movie_titles yüklendi
+            instance.user_rated_movies_with_ratings = model_data['user_rated_movies_with_ratings']
+            instance.global_average_rating = model_data['global_average_rating']
             
-            print("Model verileri başarıyla yüklendi.")
+            # Eksik olabilecek ters map'leri yeniden oluşturalım (güvenlik için)
+            if instance.movie_map and not instance.movie_map_inv:
+                 instance.movie_map_inv = {v: k for k, v in instance.movie_map.items()}
+            if instance.user_map and not instance.user_map_inv:
+                 instance.user_map_inv = {v: k for k, v in instance.user_map.items()}
+                 
+            # movie_map_inv hala None ise hata verelim, çünkü predict için gerekli
+            if not instance.movie_map_inv:
+                 print("Hata: movie_map_inv yüklenemedi veya oluşturulamadı.")
+                 return None
+            
+            print(f"Model verileri başarıyla yüklendi ({instance.n_components} bileşenli).")
             return instance
+            
         except FileNotFoundError:
             print(f"Hata: Model dosyası bulunamadı: {filepath}")
             return None
         except Exception as e:
-            print(f"Model yüklenirken hata oluştu: {e}")
+            print(f"Model yüklenirken genel bir hata oluştu: {e}")
             return None
 
 # Bu dosya doğrudan çalıştırıldığında test amaçlı model eğitimi/yükleme ve tahmin yap
 if __name__ == '__main__':
     # --- Ayarlar ---
-    MODEL_FILENAME = "cf_svd_model_data_k20.joblib" # Dosya adını değiştirelim
+    MODEL_FILENAME = "cf_svd_model_data_k20_v2.joblib" # Versiyon ekleyelim
     MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), MODEL_FILENAME)
     FORCE_RETRAIN = False # Tekrar eğitmemek için False yapıldı
     N_COMPONENTS = 20
@@ -345,35 +384,60 @@ if __name__ == '__main__':
     cf_model = None
     if not FORCE_RETRAIN and os.path.exists(MODEL_PATH):
         print("-" * 30)
-        print("Kaydedilmiş model verileri yükleniyor...")
+        print(f"Kaydedilmiş model verileri yükleniyor: {MODEL_PATH}")
         cf_model = CollaborativeFilteringModel.load_model(MODEL_PATH)
+        if cf_model:
+            print("Model başarıyla yüklendi.")
+        else:
+            print("Model yüklenemedi, yeniden eğitim denenecek.")
         print("-" * 30)
 
     if cf_model is None:
         print("-" * 30)
         print("Model verisi bulunamadı veya yeniden eğitim zorlandı. Model eğitiliyor...")
         data_directory = os.path.join(project_root, 'backend', 'data')
-        print(f"Veri yükleniyor: {data_directory}")
+        print(f"Veri seti yükleniyor ve hazırlanıyor: {data_directory}")
         data_df = load_and_prepare_data(data_path=data_directory)
         if data_df is not None:
-            data_subset = data_df
-            print(f"Tüm veri kullanılıyor: {data_subset.shape}")
+            print(f"Veri başarıyla yüklendi. Boyut: {data_df.shape}")
             cf_model = CollaborativeFilteringModel(n_components=N_COMPONENTS, random_state=42)
-            cf_model.fit(data_subset) # fit artık vektörleri ve haritaları saklıyor
+            cf_model.fit(data_df) # fit metodu vektörleri, haritaları ve ortalamayı hesaplar
             cf_model.save_model(MODEL_PATH)
         else:
-            print("Veri yüklenemedi, model eğitilemiyor.")
+            print("Hata: Veri yüklenemedi, model eğitilemiyor.")
         print("-" * 30)
 
-    # --- Tahmin Yapma ---
+    # --- Tahmin Testleri ---
     if cf_model:
         print("-" * 30)
-        print("Model ile tahmin yapılıyor...")
+        print(f"--- Mevcut Kullanıcı ({TEST_USER_ID}) İçin Tahmin Testi ---")
         if TEST_USER_ID in cf_model.user_map:
-            recommendations = cf_model.predict(TEST_USER_ID, n_recommendations=10)
-            # print(recommendations) # Çıktı zaten predict içinde yapılıyor
+            # Mevcut kullanıcı için önerileri al
+            recommendations_existing = cf_model.predict(TEST_USER_ID, n_recommendations=10)
+            # print(recommendations_existing) # Çıktı zaten predict içinde yapılıyor
         else:
-            print(f"\nTest kullanıcısı {TEST_USER_ID} modelde bulunamadı.")
+            print(f"Test kullanıcısı {TEST_USER_ID} modelde bulunamadı.")
+        print("-" * 30)
+
+        print("-" * 30)
+        print("--- Yeni Kullanıcı İçin Tahmin Testi ---")
+        # Yeni kullanıcı için önerileri al
+        TEST_NEW_USER_RATINGS = {
+            1: 5,  # Toy Story (1995)
+            3: 4,  # Grumpier Old Men (1995)
+            6: 5,  # Heat (1995)
+            47: 1, # Seven (a.k.a. Se7en) (1995)
+            50: 5, # Usual Suspects, The (1995)
+            70: 3, # From Dusk Till Dawn (1996)
+            101: 4, # Bottle Rocket (1996)
+            # Modelde olmayan bir film ekleyelim (test için)
+            999999: 5
+        }
+        recommendations_new = cf_model.predict_for_new_user(TEST_NEW_USER_RATINGS, \
+                                                          n_recommendations=10, \
+                                                          k_neighbors=50, \
+                                                          rating_threshold=3.5)
+        # print(recommendations_new) # Çıktı zaten predict_for_new_user içinde yapılıyor
         print("-" * 30)
     else:
         print("Model yüklenemedi veya eğitilemedi, tahmin yapılamıyor.") 

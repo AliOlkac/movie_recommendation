@@ -13,7 +13,6 @@ import SearchBar from './SearchBar';
 import MovieModal from './MovieModal';
 import RatedMoviesPanel from './RatedMoviesPanel';
 import FavoritesPanel from './FavoritesPanel';
-import RecommendationsModal from './RecommendationsModal';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { debounce } from 'lodash';
 import { FaStar, FaHeart, FaTimesCircle } from 'react-icons/fa';
@@ -103,9 +102,10 @@ export default function MovieList() {
   const [userFavorites, setUserFavorites] = useState<Favorites>(() => loadFavoritesFromStorage());
   const [isFavoritesPanelOpen, setIsFavoritesPanelOpen] = useState(false);
   const [recommendedMovies, setRecommendedMovies] = useState<Movie[] | null>(null);
-  const [isRecModalOpen, setIsRecModalOpen] = useState(false);
-  const [isRecLoading, setIsRecLoading] = useState(false);
-  const [recError, setRecError] = useState<string | null>(null);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [recommendationError, setRecommendationError] = useState<string | null>(null);
+  const [modalMode, setModalMode] = useState<'detail' | 'recommendation'>('detail');
+  const [currentRecommendationIndex, setCurrentRecommendationIndex] = useState(0);
 
   const loadMoviesByVoteCount = useCallback(async (page: number) => {
     if (page === 1) setIsLoading(true);
@@ -182,9 +182,23 @@ export default function MovieList() {
     }
   };
 
-  const handleCardClick = (tmdbId: number) => setSelectedTmdbId(tmdbId);
+  const handleCardClick = (tmdbId: number) => { 
+      setModalMode('detail');
+      setRecommendedMovies(null);
+      setIsLoadingRecommendations(false);
+      setRecommendationError(null);
+      setCurrentRecommendationIndex(0);
+      setSelectedTmdbId(tmdbId);
+  };
 
-  const handleCloseModal = () => setSelectedTmdbId(null);
+  const handleCloseModal = () => {
+      setSelectedTmdbId(null);
+      setModalMode('detail'); 
+      setRecommendedMovies(null);
+      setIsLoadingRecommendations(false);
+      setRecommendationError(null);
+      setCurrentRecommendationIndex(0);
+  };
 
   const findMovieTitle = (tmdbId: number): string => {
       const movieInDisplayed = displayedMovies.find(m => m.tmdbId === tmdbId);
@@ -257,14 +271,15 @@ export default function MovieList() {
   const favoriteMoviesCount = Object.keys(userFavorites).length;
 
   const handleGetRecommendations = async () => {
-    closeRatingsPanel(); 
-    setIsRecModalOpen(true);
-    setIsRecLoading(true);
-    setRecError(null);
+    closeRatingsPanel();
+    setIsLoadingRecommendations(true);
+    setRecommendationError(null);
     setRecommendedMovies(null);
+    setModalMode('detail');
+    setSelectedTmdbId(null);
+    setCurrentRecommendationIndex(0);
 
     console.log("Requesting recommendations with ratings:", userRatings);
-
     const ratingsForApi: { [key: number]: number } = {};
     for (const tmdbId in userRatings) {
       ratingsForApi[parseInt(tmdbId, 10)] = userRatings[tmdbId].rating;
@@ -273,18 +288,45 @@ export default function MovieList() {
 
     const recommendations = await fetchRecommendations(ratingsForApi);
 
-    if (recommendations) {
+    if (recommendations && recommendations.length > 0) {
       setRecommendedMovies(recommendations);
+      setModalMode('recommendation');
+      setSelectedTmdbId(recommendations[0].tmdbId);
+      setCurrentRecommendationIndex(0);
       console.log("Recommendations received:", recommendations);
+    } else if (recommendations) {
+        setRecommendationError("No recommendations found based on your ratings.");
+        setModalMode('recommendation');
+        setSelectedTmdbId(null);
     } else {
-      setRecError("Could not fetch recommendations. Please try again later.");
+      setRecommendationError("Could not fetch recommendations. Please try again later.");
+      setModalMode('recommendation');
+      setSelectedTmdbId(null);
       console.error("Failed to fetch recommendations from API.");
     }
-    setIsRecLoading(false);
+    setIsLoadingRecommendations(false);
   };
 
-  const closeRecModal = () => {
-    setIsRecModalOpen(false);
+  const handleNavigateRecommendation = (direction: 'next' | 'prev') => {
+      if (!recommendedMovies) return;
+      
+      let newIndex = currentRecommendationIndex;
+      if (direction === 'next') {
+          newIndex = (currentRecommendationIndex + 1) % recommendedMovies.length;
+      } else {
+          newIndex = (currentRecommendationIndex - 1 + recommendedMovies.length) % recommendedMovies.length;
+      }
+      setCurrentRecommendationIndex(newIndex);
+      setSelectedTmdbId(recommendedMovies[newIndex].tmdbId);
+  };
+  
+  const handleExitRecommendationMode = (selectedMovieId?: number) => {
+      setModalMode('detail');
+      if (selectedMovieId) {
+          handleCardClick(selectedMovieId);
+      } else {
+          handleCloseModal();
+      }
   };
 
   return (
@@ -410,14 +452,27 @@ export default function MovieList() {
           <p className="text-center text-red-500 mt-10">{error}</p>
       )}
 
-      <MovieModal 
-        tmdbId={selectedTmdbId}
-        onClose={handleCloseModal}
-        onRate={handleRateMovie} 
-        initialRating={selectedTmdbId ? userRatings[selectedTmdbId]?.rating ?? 0 : 0} 
-        isFavorite={selectedTmdbId ? !!userFavorites[selectedTmdbId] : false}
-        onToggleFavorite={toggleFavorite}
-      />
+      {(selectedTmdbId !== null || modalMode === 'recommendation') && (
+          <MovieModal 
+            tmdbId={selectedTmdbId}
+            onClose={handleCloseModal}
+            onRate={handleRateMovie} 
+            initialRating={modalMode === 'recommendation' && recommendedMovies 
+                               ? userRatings[recommendedMovies[currentRecommendationIndex].tmdbId!]?.rating ?? 0
+                               : selectedTmdbId ? userRatings[selectedTmdbId]?.rating ?? 0 : 0}
+            isFavorite={modalMode === 'recommendation' && recommendedMovies
+                            ? !!userFavorites[recommendedMovies[currentRecommendationIndex].tmdbId!]
+                            : selectedTmdbId ? !!userFavorites[selectedTmdbId] : false}
+            onToggleFavorite={toggleFavorite}
+            mode={modalMode}
+            recommendationsData={recommendedMovies}
+            isLoadingRecommendations={isLoadingRecommendations}
+            recommendationError={recommendationError}
+            currentRecommendationIndex={currentRecommendationIndex}
+            onNavigateRecommendation={handleNavigateRecommendation}
+            onExitRecommendationMode={handleExitRecommendationMode}
+          />
+      )}
 
       <RatedMoviesPanel 
         isOpen={isRatingsPanelOpen} 
@@ -432,14 +487,6 @@ export default function MovieList() {
         onClose={closeFavoritesPanel}
         favorites={userFavorites}
         onRemoveFavorite={toggleFavorite}
-      />
-
-      <RecommendationsModal
-        isOpen={isRecModalOpen}
-        onClose={closeRecModal}
-        recommendations={recommendedMovies}
-        isLoading={isRecLoading}
-        error={recError}
       />
     </div>
   );

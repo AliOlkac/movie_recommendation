@@ -22,7 +22,7 @@ except ModuleNotFoundError:
          CollaborativeFilteringModel = None
 
 # --- Model Yükleme ---
-MODEL_FILENAME = "cf_svd_model_data_k20.joblib"
+MODEL_FILENAME = "cf_svd_model_data_k20_v2.joblib"
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", MODEL_FILENAME)
 
 recommendation_model = None
