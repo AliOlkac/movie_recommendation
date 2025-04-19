@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Movie, fetchTmdbMovieDetails, TmdbMovieDetails } from '@/lib/api';
 import RatingStars from './RatingStars'; // Ensure this path is correct
-import { FaTimes, FaHeart, FaRegHeart, FaStar, FaChevronLeft, FaChevronRight, FaInfoCircle } from 'react-icons/fa'; // Add FaHeart, FaRegHeart, FaStar, FaChevronLeft, FaChevronRight, FaInfoCircle
+import { FaTimes, FaHeart, FaRegHeart, FaStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Add FaHeart, FaRegHeart, FaStar, FaChevronLeft, FaChevronRight
 
 // TMDB image base URL
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'; // Larger image for modal
 
 // Favorites tipini tanımla (MovieList'ten kopyala veya import et)
+/*
 interface FavoriteInfo {
   title: string;
   posterUrl: string | null;
@@ -17,6 +18,7 @@ interface FavoriteInfo {
 interface Favorites {
   [tmdbId: number]: FavoriteInfo;
 }
+*/
 
 // --- Modal Props --- 
 interface MovieModalProps {
@@ -35,14 +37,13 @@ interface MovieModalProps {
   recommendationError: string | null;
   currentRecommendationIndex: number;
   onNavigateRecommendation: (direction: 'next' | 'prev') => void;
-  onExitRecommendationMode: (selectedMovieId?: number) => void;
 }
 
 const MovieModal: React.FC<MovieModalProps> = ({ 
     tmdbId, 
     onClose, 
     onRate, 
-    initialRating, 
+    initialRating,
     isFavorite, 
     onToggleFavorite,
     // Recommendation props
@@ -52,7 +53,6 @@ const MovieModal: React.FC<MovieModalProps> = ({
     recommendationError,
     currentRecommendationIndex,
     onNavigateRecommendation,
-    onExitRecommendationMode
 }) => {
   // --- State for Detail Mode --- 
   const [movieDetails, setMovieDetails] = useState<TmdbMovieDetails | null>(null);
@@ -100,25 +100,29 @@ const MovieModal: React.FC<MovieModalProps> = ({
   // --- Rating Handler (used in both modes) ---
   const handleRatingSubmit = () => {
     let idToRate: number | null = null;
+    const ratingToSubmit = currentRating; // Capture current rating value
+    
     if (mode === 'detail') {
         idToRate = tmdbId;
     } else if (mode === 'recommendation' && recommendationsData) {
+        // Ensure we get the ID of the currently VISIBLE recommendation
         idToRate = recommendationsData[currentRecommendationIndex]?.tmdbId;
     }
     
-    if (idToRate && currentRating > 0) {
-      console.log(`Submitting rating: tmdbId=${idToRate}, rating=${currentRating}`); // Debug
-      onRate(idToRate, currentRating);
-      // **Attempt to force visual update:**
-      // Although parent state update should trigger prop change,
-      // let's ensure internal state reflects submitted value immediately.
-      // Note: This might cause a double update if parent update is fast,
-      // but can help with perceived responsiveness.
-      // setCurrentRating(currentRating); // Re-setting to the same value might not trigger re-render
-      // Maybe trigger a re-render indirectly? Or just rely on parent state update.
-      // For now, let's rely on the parent update via props.
+    // *** ADDING LOGS ***
+    console.log(`[MovieModal] handleRatingSubmit called. Mode: ${mode}`);
+    console.log(`[MovieModal] Current tmdbId prop: ${tmdbId}`);
+    console.log(`[MovieModal] Current recommendation index: ${currentRecommendationIndex}`);
+    console.log(`[MovieModal] recommendationsData available: ${!!recommendationsData}`);
+    console.log(`[MovieModal] Calculated idToRate: ${idToRate}`);
+    console.log(`[MovieModal] currentRating state: ${ratingToSubmit}`);
+    console.log(`[MovieModal] initialRating prop: ${initialRating}`);
+    
+    if (idToRate && ratingToSubmit > 0) {
+      console.log(`[MovieModal] Calling onRate with: tmdbId=${idToRate}, rating=${ratingToSubmit}`); // Log before calling
+      onRate(idToRate, ratingToSubmit);
     } else {
-        console.warn("Rating not submitted: No ID or rating=0");
+        console.warn(`[MovieModal] Rating not submitted: idToRate=${idToRate}, currentRating=${ratingToSubmit}`);
     }
   };
 
@@ -209,12 +213,10 @@ const MovieModal: React.FC<MovieModalProps> = ({
                       {/* Rating & Favorite Buttons for Recommendation */} 
                       <div className="flex flex-col items-center space-y-3 mb-4">
                           <RatingStars 
-                              key={`rec-stars-${currentRecommendation.tmdbId}`} 
-                              count={5} 
-                              value={currentRating} 
-                              onChange={setCurrentRating} 
-                              size={28} 
-                              activeColor="#ffd700" 
+                              key={`rec-stars-${currentRecommendation.tmdbId}`}
+                              totalStars={5}
+                              initialRating={initialRating}
+                              onRatingChange={setCurrentRating}
                           />
                           <button 
                               onClick={handleRatingSubmit}
@@ -232,14 +234,6 @@ const MovieModal: React.FC<MovieModalProps> = ({
                               title={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
                           >
                               {isFavorite ? <FaHeart className='mr-2'/> : <FaRegHeart className='mr-2'/>} Favorite
-                          </button>
-                          {/* Button to view details (exits recommendation mode) */} 
-                          <button 
-                              onClick={() => onExitRecommendationMode(currentRecommendation.tmdbId!)} 
-                              className='flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors text-sm'
-                              title='View Full Details'
-                          >
-                              <FaInfoCircle className='mr-2'/> View Details
                           </button>
                       </div>
                   </div>
@@ -329,11 +323,9 @@ const MovieModal: React.FC<MovieModalProps> = ({
                       <div className="flex flex-col items-center md:items-start space-y-3 mt-auto pt-4 border-t border-gray-700/50 w-full">
                           <RatingStars 
                               key={`detail-stars-${tmdbId}`} 
-                              count={5} 
-                              value={currentRating} 
-                              onChange={setCurrentRating} 
-                              size={28} 
-                              activeColor="#ffd700" 
+                              totalStars={5}
+                              initialRating={initialRating}
+                              onRatingChange={setCurrentRating}
                           />
                           <div className='flex space-x-3'>
                               <button 

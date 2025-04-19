@@ -205,6 +205,8 @@ export default function MovieList() {
       if (movieInDisplayed) return movieInDisplayed.title;
       const movieInSearch = searchResults?.find(m => m.tmdbId === tmdbId);
       if (movieInSearch) return movieInSearch.title;
+      const movieInRecommended = recommendedMovies?.find(m => m.tmdbId === tmdbId);
+      if (movieInRecommended) return movieInRecommended.title;
       return userRatings[tmdbId]?.title || userFavorites[tmdbId]?.title || 'Unknown Title'; 
   };
 
@@ -213,6 +215,8 @@ export default function MovieList() {
       if (movieInDisplayed) return movieInDisplayed.posterUrl;
       const movieInSearch = searchResults?.find(m => m.tmdbId === tmdbId);
       if (movieInSearch) return movieInSearch.posterUrl;
+      const movieInRecommended = recommendedMovies?.find(m => m.tmdbId === tmdbId);
+      if (movieInRecommended) return movieInRecommended.posterUrl;
       return userRatings[tmdbId]?.posterUrl || userFavorites[tmdbId]?.posterUrl || null;
   };
 
@@ -318,15 +322,6 @@ export default function MovieList() {
       }
       setCurrentRecommendationIndex(newIndex);
       setSelectedTmdbId(recommendedMovies[newIndex].tmdbId);
-  };
-  
-  const handleExitRecommendationMode = (selectedMovieId?: number) => {
-      setModalMode('detail');
-      if (selectedMovieId) {
-          handleCardClick(selectedMovieId);
-      } else {
-          handleCloseModal();
-      }
   };
 
   return (
@@ -470,7 +465,6 @@ export default function MovieList() {
             recommendationError={recommendationError}
             currentRecommendationIndex={currentRecommendationIndex}
             onNavigateRecommendation={handleNavigateRecommendation}
-            onExitRecommendationMode={handleExitRecommendationMode}
           />
       )}
 
