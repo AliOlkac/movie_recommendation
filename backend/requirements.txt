@@ -7,4 +7,5 @@ numpy
 scipy
 scikit-learn
 joblib
-gunicorn 
+gunicorn
+# boto3 # AWS SDK - Artık gerekli değil 

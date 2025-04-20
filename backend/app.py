@@ -4,9 +4,11 @@ from flask_cors import CORS
 import os
 import sys
 import pandas as pd
-import requests # TMDB API için eklendi
+import requests # Hem TMDB hem model indirme için
 import time # API rate limiting için eklenebilir
 from dotenv import load_dotenv # .env dosyasını yüklemek için
+# import boto3 # Artık gerekli değil
+# from botocore.exceptions import NoCredentialsError, ClientError # Artık gerekli değil
 
 # Ortam değişkenlerini .env dosyasından yükle
 load_dotenv()
@@ -25,19 +27,86 @@ except ModuleNotFoundError:
          print("HATA: CollaborativeFilteringModel import edilemedi!")
          CollaborativeFilteringModel = None
 
-# --- Model Yükleme ---
+# --- Model Yükleme (URL'den İndirme ile) ---
 MODEL_FILENAME = "cf_svd_model_data_k20_v2.joblib"
-MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", MODEL_FILENAME)
+MODELS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
+MODEL_PATH = os.path.join(MODELS_DIR, MODEL_FILENAME)
 
-recommendation_model = None
+# İndirme için Model URL'si - BUNU KENDİ ÇALIŞAN URL'N İLE DEĞİŞTİR!
+MODEL_DOWNLOAD_URL = "https://aliqo-movie-rec-model.s3.eu-north-1.amazonaws.com/cf_svd_model_data_k20_v2.joblib"
 
-if CollaborativeFilteringModel:
-    print(f"Model yükleniyor: {MODEL_PATH}")
-    recommendation_model = CollaborativeFilteringModel.load_model(MODEL_PATH)
-    if recommendation_model is None:
-        print("UYARI: Model yüklenemedi! Öneri endpoint'i çalışmayacak.")
+def download_model_from_url(url, local_path):
+    """Modeli verilen URL'den indirir."""
+    # Modelin kaydedileceği klasörün var olduğundan emin ol
+    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+    
+    print(f"URL'den model indirme deneniyor: {url} -> {local_path}")
+    try:
+        response = requests.get(url, stream=True, timeout=300) # stream=True büyük dosyalar için, timeout artırıldı
+        response.raise_for_status() # HTTP hatalarını kontrol et (4xx, 5xx)
+        
+        total_size = int(response.headers.get('content-length', 0))
+        block_size = 1024 # 1 KB
+        
+        with open(local_path, 'wb') as f:
+            downloaded_size = 0
+            for data in response.iter_content(block_size):
+                f.write(data)
+                downloaded_size += len(data)
+                # İsteğe bağlı: İndirme ilerlemesini göster
+                # done = int(50 * downloaded_size / total_size)
+                # sys.stdout.write(f"\r[{'=' * done}{' ' * (50-done)}] {downloaded_size/1024/1024:.2f} MB / {total_size/1024/1024:.2f} MB")
+                # sys.stdout.flush()
+        print("\nModel başarıyla URL'den indirildi.")
+        return True
+    except requests.exceptions.RequestException as e:
+        print(f"HATA: Model URL'sine bağlanırken veya indirirken hata oluştu: {e}")
+        # İndirme başarısız olursa yarım kalan dosyayı silmek iyi olabilir
+        if os.path.exists(local_path):
+            try:
+                os.remove(local_path)
+            except OSError:
+                pass
+        return False
+    except Exception as e:
+        print(f"HATA: Model indirme sırasında beklenmedik bir hata: {e}")
+        if os.path.exists(local_path):
+            try:
+                os.remove(local_path)
+            except OSError:
+                pass
+        return False
+
+# Uygulama başlangıcında modeli kontrol et ve gerekirse indir
+recommendation_model = None # Başlangıçta None olarak ayarla
+
+if not os.path.exists(MODEL_PATH):
+    print(f"Model dosyası yerelde bulunamadı: {MODEL_PATH}")
+    if not MODEL_DOWNLOAD_URL:
+        print("UYARI: MODEL_DOWNLOAD_URL ayarlanmamış. Model indirilemiyor.")
+    else:
+        download_successful = download_model_from_url(MODEL_DOWNLOAD_URL, MODEL_PATH)
+        if not download_successful:
+            print("UYARI: Model URL'den indirilemedi. Öneri sistemi çalışmayabilir.")
+        else:
+            # İndirme başarılıysa modeli yükle
+            if CollaborativeFilteringModel:
+                print(f"İndirilen model yükleniyor: {MODEL_PATH}")
+                recommendation_model = CollaborativeFilteringModel.load_model(MODEL_PATH)
+                if recommendation_model is None:
+                    print("UYARI: İndirilen model yüklenemedi!")
+            else:
+                 print("UYARI: Model sınıfı yüklenemedi!")
 else:
-     print("UYARI: Model sınıfı yüklenemedi! Öneri endpoint'i çalışmayacak.")
+    # Model zaten yerelde varsa doğrudan yükle
+    print(f"Model dosyası yerelde bulundu: {MODEL_PATH}")
+    if CollaborativeFilteringModel:
+        print(f"Mevcut model yükleniyor: {MODEL_PATH}")
+        recommendation_model = CollaborativeFilteringModel.load_model(MODEL_PATH)
+        if recommendation_model is None:
+            print("UYARI: Mevcut model yüklenemedi!")
+    else:
+         print("UYARI: Model sınıfı yüklenemedi!")
 
 # --- Film Verisini Yükleme ---
 MOVIES_FILENAME = "movies.csv"
