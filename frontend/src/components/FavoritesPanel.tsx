@@ -72,8 +72,10 @@ const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
                     <Image
                       src={`${TMDB_IMAGE_BASE_URL}${item.posterUrl}`}
                       alt={`${item.title} poster`}
-                      layout="fill"
-                      objectFit="cover"
+                      fill
+                      sizes="100px"
+                      style={{ objectFit: 'cover' }}
+                      className="rounded"
                     />
                   ) : (
                     // Placeholder if no poster

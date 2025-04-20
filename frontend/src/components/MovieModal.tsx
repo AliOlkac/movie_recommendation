@@ -191,9 +191,11 @@ const MovieModal: React.FC<MovieModalProps> = ({
                               <Image 
                                   src={`${TMDB_IMAGE_BASE_URL}${currentRecommendation.posterUrl}`}
                                   alt={`${currentRecommendation.title} poster`}
-                                  layout='fill'
-                                  objectFit='cover'
-                                  priority={true}
+                                  fill
+                                  sizes="(max-width: 768px) 200px, 240px"
+                                  style={{ objectFit: 'cover' }}
+                                  priority
+                                  className="rounded"
                               />
                           ) : (
                               <div className='w-full h-full bg-black/30 flex items-center justify-center text-yellow-500/50'>
@@ -294,9 +296,11 @@ const MovieModal: React.FC<MovieModalProps> = ({
                           <Image 
                               src={`${TMDB_IMAGE_BASE_URL}${movieDetails.poster_path}`}
                               alt={`${movieDetails.title} poster`}
-                              layout='fill'
-                              objectFit='cover'
-                              priority={true}
+                              fill
+                              sizes="(max-width: 768px) 192px, 100%"
+                              style={{ objectFit: 'cover' }}
+                              priority
+                              className="rounded"
                           />
                       ) : (
                          <div className='w-full h-full bg-black/30 flex items-center justify-center text-blue-500/50'>

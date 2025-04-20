@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Movie, 
   fetchRecommendations, 
@@ -16,7 +16,7 @@ import FavoritesPanel from './FavoritesPanel';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { debounce } from 'lodash';
 import { FaStar, FaHeart, FaTimesCircle } from 'react-icons/fa';
-
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- localStorage Anahtarları ve Tipleri ---
 const RATINGS_STORAGE_KEY = 'movieRatings';
@@ -83,6 +83,69 @@ const saveFavoritesToStorage = (favorites: Favorites) => {
     console.error("Error saving favorites to localStorage:", error);
   }
 };
+
+// Animasyon varyantları
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1, 
+    transition: { 
+      when: "beforeChildren",
+      staggerChildren: 0.1
+    } 
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { 
+    y: 0, 
+    opacity: 1, 
+    transition: { type: "spring", stiffness: 300, damping: 30 }
+  },
+  exit: { scale: 0.8, opacity: 0, transition: { duration: 0.2 } }
+};
+
+// LoadingSpinner bileşeni için animasyonlu bekleme bileşeni
+const LoadingSpinner = () => (
+  <motion.div 
+    className="text-center mt-10 py-8"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.5 }}
+  >
+    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-yellow-500 border-r-2 border-b-2 border-transparent"></div>
+    <motion.p 
+      className="mt-4 text-yellow-500"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.2, duration: 0.5 }}
+    >
+      Popüler filmler yükleniyor...
+    </motion.p>
+  </motion.div>
+);
+
+// Hata mesajı için animasyonlu bileşen
+const ErrorMessage = ({ errorMessage }: { errorMessage: string }) => (
+  <motion.div 
+    className="text-center p-8 text-red-500"
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+  >
+    <h3 className="text-xl font-bold mb-2">Hata Oluştu</h3>
+    <p>{errorMessage}</p>
+    <motion.button 
+      className="mt-4 px-4 py-2 bg-red-500 text-white rounded-md"
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={() => window.location.reload()}
+    >
+      Yeniden Dene
+    </motion.button>
+  </motion.div>
+);
 
 export default function MovieList() {
   const [displayedMovies, setDisplayedMovies] = useState<Movie[]>([]);
@@ -330,18 +393,25 @@ export default function MovieList() {
       <div className="fixed top-0 left-0 right-0 z-30 h-20 bg-gradient-to-b from-black/60 via-black/40 to-transparent backdrop-blur-lg border-b border-yellow-600/20 flex items-center justify-between px-4 md:px-8">
           
           <div className="flex-shrink-0">
-              <button
+              <motion.button
                 onClick={openFavoritesPanel}
                 className="relative text-pink-400 hover:text-pink-300 p-3 rounded-full bg-black/20 hover:bg-black/40 transition-colors shadow-md"
                 aria-label="Open favorite movies panel"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
                  <FaHeart size={18} />
                  {favoriteMoviesCount > 0 && (
-                   <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center text-[10px]">
+                   <motion.span 
+                     className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center text-[10px]"
+                     initial={{ scale: 0 }}
+                     animate={{ scale: 1 }}
+                     transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                   >
                      {favoriteMoviesCount}
-                   </span>
+                   </motion.span>
                  )}
-              </button>
+              </motion.button>
           </div>
 
           <div className="flex-grow max-w-xl mx-4 relative">
@@ -350,57 +420,102 @@ export default function MovieList() {
                   onSearchChange={handleSearchChange} 
               />
               {searchTerm && (
-                  <button 
+                  <motion.button 
                       onClick={clearSearch} 
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                       aria-label="Clear search"
                       title="Clear search"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                     >
                       <FaTimesCircle size={18} />
-                  </button>
+                  </motion.button>
               )}
           </div>
 
           <div className="flex-shrink-0">
-              <button
+              <motion.button
                 onClick={openRatingsPanel}
                 className="relative text-yellow-400 hover:text-yellow-300 p-3 rounded-full bg-black/20 hover:bg-black/40 transition-colors shadow-md"
                 aria-label="Open rated movies panel"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
                  <FaStar size={18} />
                  {ratedMoviesCount > 0 && (
-                   <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center text-[10px]">
+                   <motion.span 
+                     className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center text-[10px]"
+                     initial={{ scale: 0 }}
+                     animate={{ scale: 1 }}
+                     transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                   >
                      {ratedMoviesCount}
-                   </span>
+                   </motion.span>
                  )}
-              </button>
+              </motion.button>
           </div>
       </div>
 
       {isSearching && (
           <div className="px-4 md:px-8 mb-8">
               {isSearchLoading && searchResults === null && (
-                  <p className="text-center text-gray-400">Searching...</p>
+                  <motion.p 
+                    className="text-center text-gray-400"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    Searching...
+                  </motion.p>
               )}
               {searchError && (
-                  <p className="text-center text-red-500">{searchError}</p>
+                  <motion.p 
+                    className="text-center text-red-500"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {searchError}
+                  </motion.p>
               )}
               {!isSearchLoading && searchResults && searchResults.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                  <motion.div 
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+                  >
+                    <AnimatePresence>
                       {searchResults.map((movie) => (
+                        <motion.div
+                          key={`search-${movie.tmdbId}-${movie.movieId || 'tmdb'}`}
+                          variants={itemVariants}
+                          layout
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                        >
                           <MovieCard
-                              key={`search-${movie.tmdbId}-${movie.movieId || 'tmdb'}`}
                               tmdbId={movie.tmdbId} 
                               title={movie.title}
                               genres={movie.genres}
                               posterUrl={movie.posterUrl}
                               onClick={handleCardClick} 
                           />
+                        </motion.div>
                       ))}
-                  </div>
+                    </AnimatePresence>
+                  </motion.div>
               )}
               {!isSearchLoading && searchResults && searchResults.length === 0 && (
-                   <p className="text-center text-gray-400">No movies found matching &quot;{searchTerm}&quot;.</p>
+                   <motion.p 
+                     className="text-center text-gray-400"
+                     initial={{ opacity: 0 }}
+                     animate={{ opacity: 1 }}
+                     transition={{ duration: 0.3 }}
+                   >
+                     No movies found matching &quot;{searchTerm}&quot;.
+                   </motion.p>
               )}
           </div>
       )}
@@ -408,7 +523,7 @@ export default function MovieList() {
       {!isSearching && !error && (
           <div className="px-4 md:px-8">
               {isLoading && displayedMovies.length === 0 && (
-                  <p className="text-center text-yellow-500 mt-10">Loading popular movies...</p>
+                  <LoadingSpinner />
               )}
               <InfiniteScroll
                   dataLength={displayedMovies.length} 
@@ -416,35 +531,57 @@ export default function MovieList() {
                   hasMore={hasMore} 
                   loader={ 
                       <div className="text-center py-8">
-                          {isLoadingMore && <p className="text-yellow-500">Loading more movies...</p>}
+                          {isLoadingMore && <motion.p 
+                            className="text-yellow-500"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            Loading more movies...
+                          </motion.p>}
                       </div>
                   }
                   endMessage={ 
                       !isSearching && displayedMovies.length > 0 ? (
-                          <p className="text-center py-8 text-gray-500">
+                          <motion.p 
+                            className="text-center py-8 text-gray-500"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.5 }}
+                          >
                               <b>You have seen all movies!</b>
-                          </p>
+                          </motion.p>
                       ) : null
                   }
                   className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pb-16"
                   style={{ overflow: 'visible' }}
               >
-                  {displayedMovies.map((movie) => (
-                      <MovieCard
-                          key={`discover-${movie.tmdbId}-${movie.movieId || 'tmdb'}`}
-                          tmdbId={movie.tmdbId} 
-                          title={movie.title}
-                          genres={movie.genres} 
-                          posterUrl={movie.posterUrl}
-                          onClick={handleCardClick} 
-                      />
-                  ))}
+                  <AnimatePresence>
+                    {displayedMovies.map((movie) => (
+                        <motion.div
+                            key={`discover-${movie.tmdbId}-${movie.movieId || 'tmdb'}`}
+                            variants={itemVariants}
+                            layout
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                        >
+                            <MovieCard
+                                tmdbId={movie.tmdbId} 
+                                title={movie.title}
+                                genres={movie.genres} 
+                                posterUrl={movie.posterUrl}
+                                onClick={handleCardClick} 
+                            />
+                        </motion.div>
+                    ))}
+                  </AnimatePresence>
               </InfiniteScroll>
           </div>
       )}
       
       {error && !isSearching && (
-          <p className="text-center text-red-500 mt-10">{error}</p>
+          <ErrorMessage errorMessage={error} />
       )}
 
       {(selectedTmdbId !== null || modalMode === 'recommendation') && (
