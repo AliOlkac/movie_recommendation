@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Movie, fetchTmdbMovieDetails, TmdbMovieDetails } from '@/lib/api';
 import RatingStars from './RatingStars'; // Ensure this path is correct
 import { FaTimes, FaHeart, FaRegHeart, FaStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // Add FaHeart, FaRegHeart, FaStar, FaChevronLeft, FaChevronRight
+import { motion } from 'framer-motion';
 
 // TMDB image base URL
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'; // Larger image for modal
@@ -150,13 +151,15 @@ const MovieModal: React.FC<MovieModalProps> = ({
       >
         {/* Header - Consistent Close Button */} 
         <div className="flex justify-end items-center p-3 absolute top-0 right-0 z-20">
-          <button 
+          <motion.button
             onClick={onClose}
             className="text-gray-300/70 hover:text-white bg-black/40 hover:bg-black/60 rounded-full p-2 transition-colors"
             aria-label="Close modal"
+            whileHover={{ scale: 1.1, backgroundColor: 'rgba(0,0,0,0.7)'}}
+            whileTap={{ scale: 0.90 }}
           >
             <FaTimes size={18} />
-          </button>
+          </motion.button>
         </div>
 
         {/* --- Body (Conditional Rendering based on mode) --- */} 
@@ -220,43 +223,49 @@ const MovieModal: React.FC<MovieModalProps> = ({
                               initialRating={initialRating}
                               onRatingChange={setCurrentRating}
                           />
-                          <button 
+                          <motion.button
                               onClick={handleRatingSubmit}
                               disabled={currentRating === 0}
                               className={`px-5 py-1.5 rounded-md text-sm font-medium transition-colors ${currentRating > 0 ? 'bg-yellow-600 hover:bg-yellow-500 text-black' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                              whileTap={currentRating > 0 ? { scale: 0.95 } : {}}
                           >
                               {initialRating > 0 ? 'Update Rating' : 'Submit Rating'}
-                          </button>
+                          </motion.button>
                       </div>
                       <div className='flex space-x-4'>
                            {/* Favorite Button */} 
-                          <button 
+                          <motion.button
                               onClick={() => onToggleFavorite(currentRecommendation.tmdbId!)}
                               className={`flex items-center px-4 py-2 rounded-md transition-colors text-sm ${isFavorite ? 'bg-pink-600 hover:bg-pink-500 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-200'}`}
                               title={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                              whileTap={{ scale: 0.95 }}
                           >
                               {isFavorite ? <FaHeart className='mr-2'/> : <FaRegHeart className='mr-2'/>} Favorite
-                          </button>
+                          </motion.button>
                       </div>
                   </div>
               )}
               {/* Navigation Arrows */} 
               {!isLoadingRecommendations && !recommendationError && recommendationsData && recommendationsData.length > 1 && (
                   <>
-                      <button 
+                      <motion.button
                           onClick={(e) => { e.stopPropagation(); onNavigateRecommendation('prev'); }}
                           className='absolute top-1/2 left-1 md:left-2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-yellow-300/70 hover:text-yellow-200 rounded-full p-2 z-30 transition-colors'
                           aria-label='Previous recommendation'
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.90 }}
                       >
                           <FaChevronLeft size={18} />
-                      </button>
-                      <button 
+                      </motion.button>
+                      <motion.button
                           onClick={(e) => { e.stopPropagation(); onNavigateRecommendation('next'); }}
                           className='absolute top-1/2 right-1 md:right-2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-yellow-300/70 hover:text-yellow-200 rounded-full p-2 z-30 transition-colors'
                           aria-label='Next recommendation'
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.90 }}
                       >
                           <FaChevronRight size={18} />
-                      </button>
+                      </motion.button>
                       {/* Index Indicator */}
                       <div className='absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-yellow-100/50 bg-black/30 px-1.5 py-0.5 rounded'>
                           {currentRecommendationIndex + 1} / {recommendationsData.length}
@@ -332,20 +341,22 @@ const MovieModal: React.FC<MovieModalProps> = ({
                               onRatingChange={setCurrentRating}
                           />
                           <div className='flex space-x-3'>
-                              <button 
+                              <motion.button
                                   onClick={handleRatingSubmit}
                                   disabled={currentRating === 0}
                                   className={`px-5 py-1.5 rounded-md text-sm font-medium transition-colors ${currentRating > 0 ? 'bg-yellow-600 hover:bg-yellow-500 text-black' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                                  whileTap={currentRating > 0 ? { scale: 0.95 } : {}}
                               >
                                   {initialRating > 0 ? 'Update Rating' : 'Submit Rating'}
-                              </button>
-                              <button 
+                              </motion.button>
+                              <motion.button
                                   onClick={() => onToggleFavorite(tmdbId!)} 
                                   className={`flex items-center px-4 py-1.5 rounded-md transition-colors text-xs ${isFavorite ? 'bg-pink-600 hover:bg-pink-500 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-200'}`}
                                   title={isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                                  whileTap={{ scale: 0.95 }}
                               >
                                   {isFavorite ? <FaHeart className='mr-1.5'/> : <FaRegHeart className='mr-1.5'/>} Favorite
-                              </button>
+                              </motion.button>
                           </div>
                       </div>
                   </div>

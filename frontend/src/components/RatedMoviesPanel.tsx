@@ -228,7 +228,7 @@ const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({
                       {/* Remove Button - Use item.tmdbId */}
                       <motion.button
                         onClick={() => onRemoveRating(item.tmdbId)}
-                        className="absolute top-1 right-1 text-yellow-100/40 hover:text-red-500 bg-black/20 hover:bg-black/40 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                        className="absolute top-1 right-1 text-yellow-100/70 hover:text-red-500 bg-black/40 hover:bg-black/60 rounded-full p-1.5 transition-all duration-200 sm:opacity-100 md:opacity-0 md:group-hover:opacity-100"
                         aria-label={`Remove rating for ${item.title}`}
                         title="Remove Rating"
                         whileHover={{ scale: 1.2, backgroundColor: "rgba(0, 0, 0, 0.6)" }}
@@ -262,7 +262,7 @@ const RatedMoviesPanel: React.FC<RatedMoviesPanelProps> = ({
              {ratedItems.length >= 5 ? (
                  <motion.button 
                    onClick={onGetRecommendations} 
-                   className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-300"
+                   className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center"
                    variants={buttonVariants}
                    initial="idle"
                    whileHover="hover"
