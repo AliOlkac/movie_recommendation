@@ -36,20 +36,29 @@ class CollaborativeFilteringModel:
     def _create_user_movie_data(self, df):
         """
         DataFrame'i işler, matrisi oluşturur ve gerekli haritalamaları yapar.
+        Ayrıca ters haritalamaları ve film başlıklarını da burada oluşturur.
         """
         print("Kullanıcı-Film verisi ve matrisi işleniyor...")
         df['user_code'] = df['userId'].astype('category').cat.codes
         df['movie_code'] = df['movieId'].astype('category').cat.codes
 
+        # Haritalamaları oluştur
         user_map_cat = dict(enumerate(df['userId'].astype('category').cat.categories))
         movie_map_cat = dict(enumerate(df['movieId'].astype('category').cat.categories))
         self.user_map = {v: k for k, v in user_map_cat.items()}
         self.movie_map = {v: k for k, v in movie_map_cat.items()}
+        
+        # Ters haritalamaları oluştur ve ata
+        self.user_map_inv = {v: k for k, v in self.user_map.items()} # Direkt user_map'ten ters çevir
+        self.movie_map_inv = {v: k for k, v in self.movie_map.items()} # Direkt movie_map'ten ters çevir
+        print("Ters haritalamalar (user_map_inv, movie_map_inv) oluşturuldu.")
 
         sparse_matrix = csr_matrix((df['rating'], (df['user_code'], df['movie_code'])), shape=(len(self.user_map), len(self.movie_map)))
         print(f"Kullanıcı-Film matrisi oluşturuldu. Boyut: {sparse_matrix.shape}")
         
+        # Film başlıklarını oluştur ve ata
         self.movie_titles = df.set_index('movieId')['title'].drop_duplicates().to_dict()
+        print(f"Film başlıkları (movie_titles) oluşturuldu. Toplam {len(self.movie_titles)} başlık.")
         
         # Global ortalama puanı hesaplama
         self.global_average_rating = df['rating'].mean()
@@ -66,14 +75,14 @@ class CollaborativeFilteringModel:
     def fit(self, df):
         """
         Modeli eğitir ve gerekli vektörleri/haritaları saklar.
+        _create_user_movie_data çağrıldığı için haritalar burada oluşur.
         """
         user_movie_matrix = self._create_user_movie_data(df)
         print(f"{self.n_components} bileşenli TruncatedSVD modeli eğitiliyor...")
-        # SVD modelini eğit ve kullanıcı vektörlerini dönüştür
         self.user_vectors = self.model.fit_transform(user_movie_matrix)
-        # Film vektörlerini al (model.components_ zaten transpoze edilmiş haldedir)
         self.item_vectors = self.model.components_.T
         print("Model eğitimi ve vektör dönüşümü tamamlandı.")
+        # _create_user_movie_data içinde zaten user_map_inv, movie_map_inv ve movie_titles atandı.
         del user_movie_matrix
 
     def predict(self, user_id, n_recommendations=10):
@@ -134,7 +143,7 @@ class CollaborativeFilteringModel:
             print("Hata: Model vektörleri veya haritalamalar yüklenmemiş veya global ortalama yüklenmemiş.")
             return []
         if not self.user_map_inv:
-             print("Hata: user_map_inv yüklenmemiş veya oluşturulamamış.")
+             print("Hata: user_map_inv modelde bulunamadı.")
              return []
 
         print(f"Kullanıcı tabanlı öneriler hesaplanıyor (k={k_neighbors}, threshold={rating_threshold}): {ratings_dict}")
@@ -260,11 +269,25 @@ class CollaborativeFilteringModel:
         """
         Eğitilmiş modeli, vektörleri ve haritaları dosyaya kaydeder.
         """
+        # Kontrol edilecek alanlara user_map_inv, movie_map_inv ve movie_titles eklendi
         if self.user_vectors is None or self.item_vectors is None or \
            self.user_map is None or self.movie_map is None or \
-           self.user_rated_movies_with_ratings is None or self.global_average_rating is None or \
-           self.user_map_inv is None or self.movie_map_inv is None or self.movie_titles is None:
+           self.user_map_inv is None or self.movie_map_inv is None or \
+           self.movie_titles is None or \
+           self.user_rated_movies_with_ratings is None or self.global_average_rating is None:
             print("Hata: Model tam olarak eğitilmemiş veya bazı bileşenler eksik. Kaydedilemiyor.")
+            # Hangi alanın eksik olduğunu bulmaya yardımcı log ekleyelim:
+            missing = []
+            if self.user_vectors is None: missing.append('user_vectors')
+            if self.item_vectors is None: missing.append('item_vectors')
+            if self.user_map is None: missing.append('user_map')
+            if self.movie_map is None: missing.append('movie_map')
+            if self.user_map_inv is None: missing.append('user_map_inv')
+            if self.movie_map_inv is None: missing.append('movie_map_inv')
+            if self.movie_titles is None: missing.append('movie_titles')
+            if self.user_rated_movies_with_ratings is None: missing.append('user_rated_movies_with_ratings')
+            if self.global_average_rating is None: missing.append('global_average_rating')
+            print(f"Eksik alanlar: {missing}")
             return
 
         print(f"Model verileri şuraya kaydediliyor: {filepath}")
@@ -276,10 +299,10 @@ class CollaborativeFilteringModel:
             'user_rated_movies_with_ratings': self.user_rated_movies_with_ratings,
             'global_average_rating': self.global_average_rating,
             'n_components': self.n_components,
-            'svd_model_components': self.model.components_,
-            'movie_map_inv': self.movie_map_inv,
-            'user_map_inv': self.user_map_inv,
-            'movie_titles': self.movie_titles
+            'svd_model_components': self.model.components_, # Bu SVD modelinin kendisini değil, componentlerini saklar
+            'movie_map_inv': self.movie_map_inv, # Artık _create_user_movie_data'da atanıyor
+            'user_map_inv': self.user_map_inv,   # Artık _create_user_movie_data'da atanıyor
+            'movie_titles': self.movie_titles     # Artık _create_user_movie_data'da atanıyor
         }
         try:
             joblib.dump(model_data, filepath, compress=3)
@@ -296,10 +319,12 @@ class CollaborativeFilteringModel:
         try:
             model_data = joblib.load(filepath)
 
+            # Kontrol edilecek anahtarlar save_model ile tutarlı olmalı
             required_keys = [
                 'user_vectors', 'item_vectors', 'user_map', 'movie_map',
                 'movie_map_inv', 'user_map_inv', 'movie_titles',
-                'user_rated_movies_with_ratings', 'global_average_rating', 'n_components'
+                'user_rated_movies_with_ratings', 'global_average_rating', 'n_components',
+                'svd_model_components' # Kaydedildiği için kontrol listesine ekleyelim
             ]
             if not all(key in model_data for key in required_keys):
                 missing_keys = [key for key in required_keys if key not in model_data]
@@ -340,12 +365,14 @@ class CollaborativeFilteringModel:
 
 # Test bloğu
 if __name__ == '__main__':
-    MODEL_FILENAME = "cf_svd_model_data_k20_v2.joblib"
+    # --- Ayarlar ---
+    MODEL_FILENAME = "cf_svd_model_data_k10_v1.joblib" # k10 modelini kullan
     MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), MODEL_FILENAME)
-    FORCE_RETRAIN = False
-    N_COMPONENTS = 20
+    FORCE_RETRAIN = False # Modeli tekrar EĞİTME, sadece yükle ve test et
+    N_COMPONENTS = 10 # Modelin 10 bileşenle eğitildiğini belirtir
     TEST_USER_ID = 1
 
+    # --- Path ve Import Ayarları ---
     print("Test modülü çalıştırılıyor...")
     import sys
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -355,6 +382,7 @@ if __name__ == '__main__':
     from backend.utils.preprocess import load_and_prepare_data
 
     cf_model = None
+    # Modeli yükle (FORCE_RETRAIN False olduğu için bu blok çalışacak)
     if not FORCE_RETRAIN and os.path.exists(MODEL_PATH):
         print("-" * 30)
         print(f"Kaydedilmiş model verileri yükleniyor: {MODEL_PATH}")
@@ -362,49 +390,41 @@ if __name__ == '__main__':
         if cf_model:
             print("Model başarıyla yüklendi.")
         else:
-            print("Model yüklenemedi, yeniden eğitim denenecek.")
+            print("Model yüklenemedi!")
+            sys.exit(1) # Model yüklenemezse devam etme
         print("-" * 30)
-
-    if cf_model is None:
-        print("-" * 30)
-        print("Model verisi bulunamadı veya yeniden eğitim zorlandı. Model eğitiliyor...")
-        data_directory = os.path.join(project_root, 'backend', 'data')
-        print(f"Veri seti yükleniyor ve hazırlanıyor: {data_directory}")
-        data_df = load_and_prepare_data(data_path=data_directory)
-        if data_df is not None:
-            print(f"Veri başarıyla yüklendi. Boyut: {data_df.shape}")
-            cf_model = CollaborativeFilteringModel(n_components=N_COMPONENTS, random_state=42)
-            cf_model.fit(data_df)
-            cf_model.save_model(MODEL_PATH)
-        else:
-            print("Hata: Veri yüklenemedi, model eğitilemiyor.")
-        print("-" * 30)
-
+    # Eğer model dosyası bulunamazsa hata verip çık (yeniden eğitme)
+    elif not os.path.exists(MODEL_PATH):
+        print(f"HATA: Model dosyası bulunamadı: {MODEL_PATH}. Önce modeli eğitin.")
+        sys.exit(1)
+        
+    # --- Tahmin Testleri ---
     if cf_model:
+        # Mevcut kullanıcı testi (opsiyonel, kalabilir)
         print("-" * 30)
         print(f"--- Mevcut Kullanıcı ({TEST_USER_ID}) İçin Tahmin Testi ---")
         if TEST_USER_ID in cf_model.user_map:
-            recommendations_existing = cf_model.predict(TEST_USER_ID, n_recommendations=10)
+            recommendations_existing = cf_model.predict(TEST_USER_ID, n_recommendations=5)
         else:
             print(f"Test kullanıcısı {TEST_USER_ID} modelde bulunamadı.")
         print("-" * 30)
 
+        # YENİ KULLANICI TESTİ (Çocuk Filmleri Senaryosu)
         print("-" * 30)
-        print("--- Yeni Kullanıcı İçin Tahmin Testi ---")
+        print("--- Yeni Kullanıcı İçin Tahmin Testi (Çocuk Filmleri Senaryosu) ---")
         TEST_NEW_USER_RATINGS = {
-            1: 5,  # Toy Story (1995)
-            3: 4,  # Grumpier Old Men (1995)
-            6: 5,  # Heat (1995)
-            47: 1, # Seven (a.k.a. Se7en) (1995)
-            50: 5, # Usual Suspects, The (1995)
-            70: 3, # From Dusk Till Dawn (1996)
-            101: 4, # Bottle Rocket (1996)
-            999999: 5 # Modelde olmayan film
+            1: 5,      # Toy Story (1995)
+            364: 5,    # Lion King, The (1994)
+            6377: 5,   # Finding Nemo (2003)
+            4306: 5,   # Shrek (2001)
+            68954: 5,  # Up (2009)
+            # Modelde olmayan ID testi (opsiyonel, kalabilir veya kaldırılabilir)
+            # 999999: 5 
         }
         recommendations_new = cf_model.predict_for_new_user(TEST_NEW_USER_RATINGS, \
-                                                          n_recommendations=10, \
+                                                          n_recommendations=15, # Biraz daha fazla öneri görelim
                                                           k_neighbors=50, \
                                                           rating_threshold=3.5)
         print("-" * 30)
     else:
-        print("Model yüklenemedi veya eğitilemedi, tahmin yapılamıyor.") 
+        print("Model yüklenemedi, tahmin yapılamıyor.") 

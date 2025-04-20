@@ -28,12 +28,12 @@ except ModuleNotFoundError:
          CollaborativeFilteringModel = None
 
 # --- Model Yükleme (URL'den İndirme ile) ---
-MODEL_FILENAME = "cf_svd_model_data_k20_v2.joblib"
+MODEL_FILENAME = "cf_svd_model_data_k10_v1.joblib"
 MODELS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 MODEL_PATH = os.path.join(MODELS_DIR, MODEL_FILENAME)
 
-# İndirme için Model URL'si - BUNU KENDİ ÇALIŞAN URL'N İLE DEĞİŞTİR!
-MODEL_DOWNLOAD_URL = "https://aliqo-movie-rec-model.s3.eu-north-1.amazonaws.com/cf_svd_model_data_k20_v2.joblib"
+# İndirme için Model URL'si - BUNU YENİ URL İLE DEĞİŞTİR!
+MODEL_DOWNLOAD_URL = "https://aliqo-movie-rec-model.s3.eu-north-1.amazonaws.com/cf_svd_model_data_k10_v1.joblib" # Placeholder URL - Güncellenecek
 
 def download_model_from_url(url, local_path):
     """Modeli verilen URL'den indirir."""
