@@ -13,11 +13,11 @@ import SearchBar from './SearchBar';
 import MovieModal from './MovieModal';
 import RatedMoviesPanel from './RatedMoviesPanel';
 import FavoritesPanel from './FavoritesPanel';
+import SearchResultDropdown from './SearchResultDropdown';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { debounce } from 'lodash';
 import { FaStar, FaHeart, FaTimesCircle } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 
 // --- localStorage Anahtarları ve Tipleri ---
 const RATINGS_STORAGE_KEY = 'movieRatings';
@@ -253,6 +253,9 @@ export default function MovieList() {
   const toggleFullSearchView = (show: boolean) => {
     setIsSearching(show);
     if (show) {
+        setSearchTerm('');
+    }
+    if (show) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -461,130 +464,25 @@ export default function MovieList() {
               {searchTerm && (
                   <motion.button 
                       onClick={clearSearch} 
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors z-10"
                       aria-label="Clear search"
                       title="Clear search"
                       whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                      whileTap={{ scale: 0.90 }}
                     >
                       <FaTimesCircle size={18} />
                   </motion.button>
               )}
 
-              {/* Arama Sonuçları Dropdown Paneli - Modern ve kompakt tasarım */}
-              {searchTerm && (
-                <motion.div 
-                  className="absolute mt-2 w-full left-0 right-0 bg-gradient-to-b from-black/90 to-black/80 backdrop-blur-md rounded-lg shadow-lg z-40 border border-gray-700/30 overflow-hidden"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {isSearchLoading && (
-                    <div className="flex justify-center items-center py-6">
-                      <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-yellow-500"></div>
-                    </div>
-                  )}
-                  {searchError && !isSearchLoading && (
-                    <p className="text-center py-4 text-red-400 text-sm">{searchError}</p>
-                  )}
-                  {!isSearchLoading && searchResults && searchResults.length === 0 && (
-                    <p className="text-center py-4 text-gray-400 text-sm">No movies found matching &quot;{searchTerm}&quot;.</p>
-                  )}
-                  {!isSearchLoading && searchResults && searchResults.length > 0 && (
-                    <div className="p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="text-xs text-gray-400">Found {searchResults.length} results</p>
-                        {searchResults.length > 10 && (
-                          <button 
-                            className="text-xs text-yellow-500 hover:text-yellow-400 bg-black/30 px-2 py-1 rounded-full transition-colors duration-200"
-                            onClick={() => toggleFullSearchView(true)}
-                          >
-                            View all
-                          </button>
-                        )}
-                      </div>
-                      
-                      {/* Yatay kaydırmalı sonuç listesi - scrollbar gizli */}
-                      <div className="relative">
-                        {/* Masaüstü için sol-sağ kaydırma butonları */}
-                        {searchResults.length > 4 && (
-                          <>
-                            <button 
-                              className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-black/70 hover:bg-black/90 rounded-full items-center justify-center text-gray-400 hover:text-white transition-colors"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                const scrollContainer = e.currentTarget.parentElement?.querySelector('.scroll-container');
-                                if (scrollContainer) {
-                                  scrollContainer.scrollBy({ left: -200, behavior: 'smooth' });
-                                }
-                              }}
-                            >
-                              &#10094;
-                            </button>
-                            <button 
-                              className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-black/70 hover:bg-black/90 rounded-full items-center justify-center text-gray-400 hover:text-white transition-colors"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                const scrollContainer = e.currentTarget.parentElement?.querySelector('.scroll-container');
-                                if (scrollContainer) {
-                                  scrollContainer.scrollBy({ left: 200, behavior: 'smooth' });
-                                }
-                              }}
-                            >
-                              &#10095;
-                            </button>
-                          </>
-                        )}
-                        
-                        <div 
-                          className="overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide scroll-container"
-                          ref={(el) => {
-                            // Wheel kaydırma desteği ekliyoruz
-                            if (el) {
-                              el.onwheel = (e) => {
-                                e.preventDefault();
-                                el.scrollLeft += e.deltaY;
-                              };
-                            }
-                          }}
-                        >
-                          <div className="flex space-x-2 min-w-max">
-                            {searchResults.slice(0, 10).map((movie) => (
-                              <motion.div 
-                                key={`search-${movie.tmdbId}`} 
-                                className="flex-shrink-0 w-24 sm:w-28 cursor-pointer"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => {
-                                  handleCardClick(movie.tmdbId!);
-                                }}
-                              >
-                                <div className="relative aspect-[2/3] rounded-md overflow-hidden border border-gray-700/30 bg-black/40 mb-1">
-                                  {movie.posterUrl ? (
-                                    <Image 
-                                      src={`https://image.tmdb.org/t/p/w185${movie.posterUrl}`}
-                                      alt={movie.title}
-                                      fill
-                                      sizes="100px"
-                                      style={{ objectFit: 'cover' }}
-                                      className="rounded-md hover:opacity-80 transition-opacity"
-                                    />
-                                  ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-white text-xs">
-                                      No Poster
-                                    </div>
-                                  )}
-                                </div>
-                                <p className="text-xs text-white/90 truncate mt-1" title={movie.title}>{movie.title}</p>
-                              </motion.div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
+              {/* YENİ Arama Sonuçları Dropdown Bileşeni */}
+              <SearchResultDropdown 
+                searchTerm={searchTerm} 
+                searchResults={searchResults} 
+                isLoading={isSearchLoading} 
+                error={searchError} 
+                onMovieClick={handleCardClick} 
+                onViewAllClick={() => toggleFullSearchView(true)} 
+              />
           </div>
 
           <div className="flex-shrink-0 order-2 sm:order-3">

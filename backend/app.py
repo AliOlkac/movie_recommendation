@@ -6,6 +6,10 @@ import sys
 import pandas as pd
 import requests # TMDB API için eklendi
 import time # API rate limiting için eklenebilir
+from dotenv import load_dotenv # .env dosyasını yüklemek için
+
+# Ortam değişkenlerini .env dosyasından yükle
+load_dotenv()
 
 # Model sınıfımızı import etmek için path ayarlaması
 try:
@@ -68,7 +72,15 @@ except Exception as e:
 # --------------------------
 
 # --- TMDB API Ayarları ---
-TMDB_API_KEY = "f9fbcbba4387e66ad99b2b4ca1e41e34" # Sağlanan API anahtarı
+# API anahtarını ortam değişkeninden oku
+TMDB_API_KEY = os.getenv("TMDB_API_KEY")
+
+# API anahtarı yoksa uyarı ver (veya programı durdur)
+if not TMDB_API_KEY:
+    print("UYARI: TMDB_API_KEY ortam değişkeni bulunamadı! .env dosyasını kontrol edin.")
+    # İsteğe bağlı: Anahtar olmadan devam etmek istemiyorsanız burada çıkabilirsiniz
+    # sys.exit("TMDB API Anahtarı gerekli.") 
+
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500" # Afişler için temel URL (w500 boyutu)
 # -----------------------
@@ -132,15 +144,18 @@ def get_recommendations(user_id):
 # -------------------------
 
 # --- TMDB Poster Path Getirme Yardımcı Fonksiyonu (Cache ile) ---
-# Basit bir cache mekanizması (daha iyisi için Flask-Caching gibi kütüphaneler kullanılabilir)
 tmdb_poster_cache = {}
 
 def get_tmdb_poster_path(tmdb_id):
     if tmdb_id in tmdb_poster_cache:
-        # print(f"Cache hit for tmdbId: {tmdb_id}") # Debug
         return tmdb_poster_cache[tmdb_id]
     
-    # print(f"Cache miss for tmdbId: {tmdb_id}, fetching from TMDB...") # Debug
+    # API Anahtarı kontrolü fonksiyon içinde de yapılmalı
+    if not TMDB_API_KEY:
+        print("UYARI: TMDB API Anahtarı ayarlanmamış. Poster yolu alınamıyor.")
+        tmdb_poster_cache[tmdb_id] = None # Tekrar denememek için cache'e None ekle
+        return None
+
     tmdb_url = f"{TMDB_BASE_URL}/movie/{tmdb_id}?api_key={TMDB_API_KEY}&language=en-US"
     poster_path = None
     try:
@@ -255,22 +270,26 @@ def get_movie_details(movie_id):
         release_date = None
 
         if tmdb_id:
-            # TMDB'den detayları ve poster path'i alalım
-            tmdb_url = f"{TMDB_BASE_URL}/movie/{tmdb_id}?api_key={TMDB_API_KEY}&language=en"
-            try:
-                tmdb_response = requests.get(tmdb_url, timeout=2)
-                tmdb_response.raise_for_status()
-                tmdb_data = tmdb_response.json()
-                poster_path = tmdb_data.get('poster_path')
-                if poster_path:
-                     poster_url = f"{TMDB_POSTER_BASE_URL}{poster_path}"
-                overview = tmdb_data.get('overview')
-                vote_average = tmdb_data.get('vote_average')
-                release_date = tmdb_data.get('release_date')
-            except requests.exceptions.RequestException as tmdb_err:
-                print(f"WARNING: TMDB API request failed (details, tmdbId: {tmdb_id}): {tmdb_err}")
-            except Exception as e:
-                print(f"WARNING: Error processing TMDB data (details, tmdbId: {tmdb_id}): {e}")
+            # API Anahtarı kontrolü
+            if not TMDB_API_KEY:
+                print("UYARI: TMDB API Anahtarı ayarlanmamış. Detaylar alınamıyor.")
+            else:
+                # TMDB'den detayları ve poster path'i alalım
+                tmdb_url = f"{TMDB_BASE_URL}/movie/{tmdb_id}?api_key={TMDB_API_KEY}&language=en"
+                try:
+                    tmdb_response = requests.get(tmdb_url, timeout=2)
+                    tmdb_response.raise_for_status()
+                    tmdb_data = tmdb_response.json()
+                    poster_path = tmdb_data.get('poster_path')
+                    if poster_path:
+                         poster_url = f"{TMDB_POSTER_BASE_URL}{poster_path}"
+                    overview = tmdb_data.get('overview')
+                    vote_average = tmdb_data.get('vote_average')
+                    release_date = tmdb_data.get('release_date')
+                except requests.exceptions.RequestException as tmdb_err:
+                    print(f"WARNING: TMDB API request failed (details, tmdbId: {tmdb_id}): {tmdb_err}")
+                except Exception as e:
+                    print(f"WARNING: Error processing TMDB data (details, tmdbId: {tmdb_id}): {e}")
 
         # Yanıta ek bilgileri ekle
         movie_details['posterUrl'] = poster_url

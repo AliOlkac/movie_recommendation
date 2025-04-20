@@ -33,4 +33,9 @@ Thumbs.db
 # IDE/Editör Dosyaları (Örnekler)
 .vscode/
 .idea/
-*.swp 
+*.swp
+
+# Environment variables
+.env
+*.env
+.env.* 

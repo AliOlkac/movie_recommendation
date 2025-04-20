@@ -25,7 +25,7 @@
 -   [X] Frontend: Genel site arka planının ayarlanması.
 -   [X] Frontend: Temel `MovieCard` bileşeninin (afişli) oluşturulması.
 -   [X] Frontend: Ana sayfada ilk 20 filmin API'den çekilip `MovieCard` ile listelenmesi.
--   [X] Frontend: Arama çubuğu bileşeni (`components/SearchBar.tsx`) oluşturma ve ana sayfaya entegre etme (canlı arama dahil).
+-   [X] Frontend: Arama çubuğu bileşeni (`components/SearchBar.tsx`) oluşturma ve ana sayfaya entegre etme (canlı arama, dropdown sonuçları, tam sayfa sonuçlar).
 -   [X] Frontend: TMDB API entegrasyonu (API anahtarı ayarlama, modal içinde özet/detay çekme).
 -   [X] Frontend: Film detayları ve puanlama için modal oluşturma (`MovieModal.tsx`).
 -   [X] Frontend: Tekrar kullanılabilir puanlama yıldızları bileşeni oluşturma (`RatingStars.tsx`).
@@ -35,40 +35,39 @@
 -   [X] Frontend: Favori filmler için sol panel bileşeni (`FavoritesPanel.tsx`) oluşturma ve entegrasyonu.
 -   [X] Frontend: Filmleri favorilere ekleme/çıkarma (modal butonu, sol panel, localStorage).
 -   [X] Backend: Puanlara göre öneri döndüren yeni API endpoint'i (`/api/recommendations` POST) oluşturma.
--   [X] Backend: Model sınıfına yeni kullanıcılar için öneri metodu (`predict_for_new_user`) ekleme.
+-   [X] Backend: Model sınıfına yeni kullanıcılar için öneri metodu (`predict_for_new_user`) ekleme ve iyileştirme (sonra geri alındı).
 -   [X] Frontend: Yeni backend endpoint'ini çağıran API fonksiyonu (`fetchRecommendations`) ekleme.
--   [X] Frontend: Önerilen filmleri göstermek için modal (`RecommendationsModal.tsx`) oluşturma ve entegrasyonu.
--   [X] Frontend: "Get Recommendations" butonuna işlevsellik kazandırma.
+-   [X] Frontend: Önerilen filmleri göstermek için modal (`MovieModal.tsx` içinde) oluşturma ve entegrasyonu.
+-   [X] Frontend: "Get Recommendations" butonuna işlevsellik kazandırma (API çağırma, modal tetikleme).
+-   [X] Frontend: Buton tıklama hissi (whileTap) ve öneri yükleme animasyonu (overlay) ekleme.
 -   [X] Tasarım: Kartlar, modal ve paneller için Glassmorphism efekti uygulama.
--   [X] Hata Düzeltme: API entegrasyonları ve model kullanımı sırasında karşılaşılan hataların (AttributeError, linter uyarıları vb.) giderilmesi.
+-   [X] Mobil Uyumluluk: Arama çubuğu, başlık, film kartları grid'i ve panellerdeki listelerin mobil cihazlarda daha iyi görünmesi sağlandı.
+-   [X] Hata Düzeltme: API entegrasyonları, model kullanımı ve UI bileşenleri sırasında karşılaşılan hataların (AttributeError, linter uyarıları vb.) giderilmesi.
+-   [X] Film listesi için lazy loading (infinite scroll) implementasyonu (Kontrol edildi/Mevcut).
+-   [X] Kapsamlı Test (Kullanıcı onayıyla tamamlandı kabul edildi).
 
 ## Devam Eden İşler
--   [ ] Öneri kalitesinin iyileştirilmesi (`predict_for_new_user` metodunda normalizasyon vb.).
+-   [ ] Kod Temizliği ve İyileştirme (Mevcut adım).
 
 ## Yapılacak İşler (Genel Bakış)
 
 ### Backend Görevleri
 -   [ ] CORS yapılandırmasının gözden geçirilmesi/iyileştirilmesi (`backend/app.py`).
--   [ ] Temel API testlerinin yapılması (tüm endpoint'ler için).
 -   [ ] Modelin periyodik eğitimi için bir strateji belirlenmesi (Opsiyonel).
 
 ### Frontend Görevleri
--   [ ] Film listesi için lazy loading (infinite scroll) implementasyonu.
--   [ ] Kullanıcı arayüzü iyileştirmeleri (ince ayarlar, animasyonlar vb.).
--   [ ] Fark edilen UI sorunlarının giderilmesi (Kullanıcı tarafından belirtilecek).
+-   [ ] Kullanıcı arayüzü iyileştirmeleri (gerekirse ince ayarlar).
 
 ### Entegrasyon ve Diğer Görevler
 -   [ ] Basit kullanıcı yönetimi (opsiyonel).
--   [ ] Kodun temizlenmesi ve dokümantasyonun güncellenmesi.
+-   [ ] Dokümantasyonun güncellenmesi (Memory Bank vb.).
 -   [ ] Deployment (Vercel vb.)
 
 ## Mevcut Durum ve Zorluklar
--   **Durum:** Uygulamanın temel işlevleri (film listeleme, arama, detay görme, puanlama, favorilere ekleme, puanlara göre öneri alma) tamamlanmıştır. Kullanıcı puanları ve favorileri `localStorage`'da saklanmaktadır. Paneller ve modallar aracılığıyla etkileşim sağlanmaktadır. Öneri sistemi çalışıyor ancak kalitesi iyileştirilebilir.
+-   **Durum:** Uygulamanın temel işlevleri stabil çalışıyor. UI/UX iyileştirmeleri yapıldı. Öneri algoritması önceki (toplam benzerlik skoru) versiyonuna döndürüldü.
 -   **Potansiyel Zorluklar:**
-    -   `predict_for_new_user` metodundaki basit ağırlıklı ortalamanın öneri kalitesini sınırlaması.
-    -   Collaborative filtering modelinin tek başına soğuk başlangıç (yeni kullanıcı) problemini tam çözememesi.
+    -   Mevcut öneri algoritmasının (toplam benzerlik skoru) kalitesi bazı durumlarda istenen seviyede olmayabilir.
     -   TMDB API limitleri.
-    -   Veri setinin büyüklüğü nedeniyle model eğitiminin yavaş olması (eğer yeniden eğitim gerekirse).
 
 ## Tahmini Zaman Çizelgesi
 *(Güncellenmeli)* 
