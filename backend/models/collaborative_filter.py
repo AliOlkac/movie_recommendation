@@ -369,7 +369,7 @@ if __name__ == '__main__':
     MODEL_FILENAME = "cf_svd_model_data_k10_v1.joblib" # k10 modelini kullan
     MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), MODEL_FILENAME)
     FORCE_RETRAIN = False # Modeli tekrar EĞİTME, sadece yükle ve test et
-    N_COMPONENTS = 10 # Modelin 10 bileşenle eğitildiğini belirtir
+    N_COMPONENTS = 20 # Modelin 20 bileşenle eğitildiğini belirtir
     TEST_USER_ID = 1
 
     # --- Path ve Import Ayarları ---

@@ -19,7 +19,7 @@ export default function RootLayout({
     <html lang="tr">
       <body className={inter.className}>
         {/* <Navbar /> Navbar çağrısını kaldır */}
-        {children} 
+        {children}
       </body>
     </html>
   );
