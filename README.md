@@ -1,6 +1,6 @@
 # NextFilms: Kişiselleştirilmiş Film Öneri Sistemi
 
-[![Ekran Görüntüsü](ana_ekran.png)](ana_ekran.png)
+[![Ekran Görüntüsü](frontend/public/images/ana_ekran.png)](frontend/public/images/ana_ekran.png)
 
 Bu proje, kullanıcılara izledikleri ve puanladıkları filmlere göre kişiselleştirilmiş film önerileri sunan modern bir web uygulamasıdır. MovieLens veri seti ve TMDB API kullanılarak geliştirilmiştir.
 
@@ -147,7 +147,7 @@ Bu deneyim, kaynak kısıtlı ortamlarda büyük makine öğrenimi modellerini d
 
 ## 🖼️ Ekran Görüntüsü
 
-![Uygulama Ana Ekranı](ana_ekran.png)
+![Uygulama Ana Ekranı](frontend/public/images/ana_ekran.png)
 
 ## 🔮 Gelecek Geliştirmeler
 
@@ -166,7 +166,7 @@ Umarım bu güncellenmiş README dosyası projeni daha doğru ve detaylı bir ş
 
 # NextFilms: Personalized Movie Recommendation System
 
-[![Screenshot](ana_ekran.png)](ana_ekran.png)
+[![Screenshot](frontend/public/images/ana_ekran.png)](frontend/public/images/ana_ekran.png)
 
 This project is a modern web application that provides users with personalized movie recommendations based on the movies they watch and rate. It is developed using the MovieLens dataset and the TMDB API.
 
@@ -313,7 +313,7 @@ This experience highlights the common challenges of deploying large machine lear
 
 ## 🖼️ Screenshot
 
-![Application Main Screen](ana_ekran.png)
+![Application Main Screen](frontend/public/images/ana_ekran.png)
 
 ## 🔮 Future Enhancements
 

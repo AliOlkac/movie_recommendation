@@ -11,7 +11,7 @@ from collections import defaultdict # Komşu filmlerini saymak için
 
 # Öneri modeli için bir sınıf oluşturmak daha düzenli olabilir
 class CollaborativeFilteringModel:
-    def __init__(self, n_components=50, random_state=42):
+    def __init__(self, n_components=N_COMPONENTS, random_state=42):
         """
         Model yapılandırması.
 
