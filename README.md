@@ -1,180 +1,3 @@
-# NextFilms: Kişiselleştirilmiş Film Öneri Sistemi
-
-[![Ekran Görüntüsü](frontend/public/images/ana_ekran.png)](frontend/public/images/ana_ekran.png)
-
-Bu proje, kullanıcılara izledikleri ve puanladıkları filmlere göre kişiselleştirilmiş film önerileri sunan modern bir web uygulamasıdır. MovieLens veri seti ve TMDB API kullanılarak geliştirilmiştir.
-
-## 🚀 Öne Çıkan Özellikler
-
-*   **Film Keşfet:** Geniş bir film kataloğunu listeleyin ve popüler filmleri keşfedin.
-*   **Akıllı Arama:** Film adına göre anlık arama yapın ve sonuçları hızla görün.
-*   **Film Detayları:** TMDB API entegrasyonu sayesinde filmlerin özetini, türünü, oyuncu kadrosunu ve daha fazlasını içeren detaylı bilgilere modal pencerede erişin.
-*   **Puanlama:** Filmleri 1-5 yıldız arası puanlayın. Puanlarınız öneri algoritmasını besler ve yerel depolamada saklanır.
-*   **Favoriler:** Beğendiğiniz filmleri favori listenize ekleyin ve kolayca erişin.
-*   **Kişiselleştirilmiş Öneriler:** Puanladığınız filmlere dayanarak, Collaborative Filtering (SVD ile) modelini kullanan backend servisinden size özel film önerileri alın.
-*   **Modern Arayüz:** React, Next.js, Tailwind CSS ve Framer Motion ile oluşturulmuş, Glassmorphism efektleri ve akıcı animasyonlarla zenginleştirilmiş kullanıcı dostu bir arayüz.
-*   **Mobil Uyumlu Tasarım:** Farklı ekran boyutlarında (PC, tablet, mobil) sorunsuz bir deneyim sunar.
-
-## 🛠️ Kullanılan Teknolojiler
-
-*   **Backend:**
-    *   **Python:** Ana programlama dili.
-    *   **Flask:** Web framework'ü.
-    *   **Pandas:** Veri manipülasyonu ve analizi.
-    *   **Scikit-learn:** Makine öğrenimi (SVD modeli için).
-    *   **Joblib:** Eğitilmiş modelin diske kaydedilmesi ve yüklenmesi.
-    *   **Gunicorn:** Üretim ortamı için WSGI HTTP sunucusu.
-*   **Frontend:**
-    *   **Next.js:** React framework'ü (SSR, Routing vb.).
-    *   **React:** Kullanıcı arayüzü kütüphanesi.
-    *   **TypeScript:** Statik tipleme ile daha güvenli kod geliştirme.
-    *   **Tailwind CSS:** Hızlı UI geliştirme için yardımcı sınıf tabanlı CSS framework'ü.
-    *   **Framer Motion:** Akıcı animasyonlar ve geçişler.
-    *   **Axios:** HTTP istekleri için.
-*   **Veri Kaynakları:**
-    *   **MovieLens ml-latest:** Film derecelendirme veri seti.
-    *   **The Movie Database (TMDB) API:** Film meta verileri (özet, afiş, tür vb.).
-*   **Deployment:**
-    *   **Render:** Backend ve Frontend uygulamalarının bulutta barındırılması (Denendi, ancak bellek sorunları nedeniyle ücretsiz katmanda başarılı olunamadı).
-    *   **AWS S3:** Eğitilmiş model dosyasının depolanması.
-*   **Diğer Araçlar:**
-    *   **Git & GitHub:** Versiyon kontrolü ve kod deposu.
-    *   **VS Code & Cursor:** Kod editörü ve AI destekli geliştirme.
-
-## ⚙️ Kurulum ve Çalıştırma
-
-Projeyi yerel makinenizde çalıştırmak için aşağıdaki adımları takip edin:
-
-### Gereksinimler
-
-*   Python 3.8 veya üzeri
-*   Node.js 16 veya üzeri
-*   npm veya yarn
-*   [TMDB API Anahtarı](https://www.themoviedb.org/settings/api)
-
-### Backend Kurulumu
-
-1.  **Proje Klonlama:**
-    ```bash
-    git clone <repository_url>
-    cd <repository_name>/backend
-    ```
-2.  **Veri Setini İndirme ve Yerleştirme:**
-    *   [MovieLens Latest Datasets](https://grouplens.org/datasets/movielens/latest/) sayfasından **ml-latest.zip** dosyasını indirin.
-    *   Zip dosyasını açın ve içindeki `ml-latest` klasörünün içeriğini (özellikle `ratings.csv`, `movies.csv`, `links.csv` dosyalarını) projenizdeki `backend/data/` klasörüne kopyalayın.
-    *   **Önemli Not:** `ratings.csv` dosyası çok büyük olduğu için (`~900MB`) `.gitignore` dosyası ile Git deposuna **dahil edilmemiştir**. Bu dosyayı manuel olarak indirip eklemeniz gerekmektedir.
-3.  **Sanal Ortam Oluşturma ve Aktifleştirme:**
-    ```bash
-    # Windows
-    python -m venv venv
-    .\venv\Scripts\activate
-
-    # macOS/Linux
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
-4.  **Bağımlılıkları Yükleme:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-5.  **`.env` Dosyası Oluşturma:**
-    `backend` klasöründe `.env` adında bir dosya oluşturun ve içine TMDB API anahtarınızı ekleyin:
-    ```env
-    TMDB_API_KEY=YOUR_TMDB_API_KEY
-    ```
-6.  **Model Dosyası:**
-    *   Eğitilmiş model (`.joblib` dosyası) normalde S3'den indirilir (`app.py` içindeki `MODEL_DOWNLOAD_URL` ile). Yerel çalıştırma için, ya bu URL'nin geçerli olduğundan ve model dosyasının S3'te bulunduğundan emin olun ya da modeli yerel olarak eğitip (`python models/collaborative_filter.py train` komutu ile) oluşan dosyayı `backend/models/` altına koyun ve indirme mantığını `app.py` içinde geçici olarak devre dışı bırakın/yorum satırı yapın.
-7.  **Uygulamayı Çalıştırma:**
-    ```bash
-    flask run
-    ```
-    Backend varsayılan olarak `http://127.0.0.1:5000` adresinde çalışacaktır.
-
-### Backend Dosya Yapısı ve Açıklamaları
-
-```
-backend/
-├── data/               # Manuel olarak indirilen MovieLens veri setinin bulunacağı yer (Git'e dahil değil).
-├── models/             # Makine öğrenimi modeli kodları ve S3'ten indirilen/yerel olarak eğitilen model dosyası.
-│   ├── collaborative_filter.py  # Collaborative Filtering modelini (SVD) eğiten, yükleyen ve tahmin yapan sınıf.
-│   └── [MODEL_FILENAME].joblib # Eğitilmiş model dosyası (örn: cf_svd_model_data_k10_v1.joblib).
-├── utils/              # Yardımcı fonksiyonlar.
-│   └── preprocess.py   # Ham MovieLens verisini okuyan ve işleyen fonksiyonlar (şu an doğrudan app.py içinde kullanılıyor).
-├── venv/               # Python sanal ortamı (Git'e dahil değil).
-├── .env                # Ortam değişkenleri (TMDB API Key) (Git'e dahil değil).
-├── app.py              # Ana Flask uygulaması: API endpoint'lerini tanımlar, modeli yükler, istekleri yönetir.
-└── requirements.txt    # Gerekli Python kütüphaneleri ve sürümleri.
-```
-
-### Frontend Kurulumu
-
-1.  **Frontend Klasörüne Geçme:**
-    ```bash
-    cd ../frontend
-    ```
-2.  **Bağımlılıkları Yükleme:**
-    ```bash
-    npm install
-    # veya
-    yarn install
-    ```
-3.  **`.env.local` Dosyası Oluşturma:**
-    `frontend` klasöründe `.env.local` adında bir dosya oluşturun ve içine backend API adresini ve TMDB API anahtarınızı ekleyin:
-    ```env
-    NEXT_PUBLIC_API_URL=http://127.0.0.1:5000/api
-    NEXT_PUBLIC_TMDB_API_KEY=YOUR_TMDB_API_KEY
-    ```
-4.  **Uygulamayı Çalıştırma:**
-    ```bash
-    npm run dev
-    # veya
-    yarn dev
-    ```
-    Frontend varsayılan olarak `http://localhost:3000` adresinde çalışacaktır.
-
-## ☁️ Deployment ve Karşılaşılan Zorluklar
-
-Bu uygulama **Render** platformunda canlıya alınmaya çalışılmıştır. Ancak, Render'ın ücretsiz katmanındaki **512 MB RAM limiti**, Collaborative Filtering (SVD) modelinin ve ilgili veri yapılarının (Pandas DataFrames vb.) belleğe yüklenmesi sırasında **"Out of Memory" (Bellek Yetersiz)** hatalarına neden olmuştur.
-
-Bu zorluğun üstesinden gelmek için aşağıdaki adımlar denenmiştir:
-
-1.  **Model Küçültme:** SVD modelinin karmaşıklığı, `n_components` parametresi `100`'den `10`'a düşürülerek azaltıldı. Bu, modelin disk boyutunu ve teorik bellek ihtiyacını önemli ölçüde azalttı.
-2.  **Memory Mapping (`mmap_mode`):** Backend kodunda, `joblib.load` fonksiyonu ile model yüklenirken `mmap_mode='r'` parametresi kullanıldı. Bu teknik, modelin büyük NumPy dizilerinin tamamını RAM'e kopyalamak yerine, disk üzerindeki dosya içeriğini sanal belleğe eşleyerek bellek kullanımını azaltmayı hedefler.
-
-**Sonuç:** Yapılan optimizasyonlara rağmen (`n_components=10` ve `mmap_mode`), uygulamanın toplam bellek kullanımı Render'ın ücretsiz katmanındaki 512 MB limitini **aşmaya devam etmiştir**. Bu nedenle, proje bu yapılandırma ile Render'ın ücretsiz katmanında **başarılı bir şekilde deploy edilememiştir**. Daha yüksek bellek limitlerine sahip bir platform veya daha agresif optimizasyon teknikleri (örn: daha küçük veri setleri kullanmak, farklı model türleri denemek, Pandas yerine daha az bellek tüketen kütüphaneler araştırmak) gerekmektedir.
-
-Bu deneyim, kaynak kısıtlı ortamlarda büyük makine öğrenimi modellerini dağıtırken karşılaşılan yaygın zorlukları ve optimizasyon denemelerinin sınırlarını göstermektedir.
-
-## 🖼️ Ekran Görüntüsü
-
-![Uygulama Ana Ekranı](frontend/public/images/ana_ekran.png)
-
-## 🔮 Gelecek Geliştirmeler
-
-*   Daha gelişmiş öneri algoritmaları entegrasyonu (örn: içerik tabanlı filtreleme, hibrit yaklaşımlar).
-*   Kullanıcı profilleri ve kimlik doğrulama.
-*   Modelin periyodik olarak otomatik yeniden eğitimi.
-*   Daha kapsamlı testler (birim, entegrasyon, uçtan uca).
-*   Performans optimizasyonları (API yanıt süreleri, veri yükleme stratejileri).
-*   Farklı hosting platformları veya ücretli planların değerlendirilmesi.
-
----
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ---
 
@@ -339,3 +162,178 @@ This experience highlights the common challenges of deploying large machine lear
 *   Evaluation of different hosting platforms or paid plans.
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# NextFilms: Kişiselleştirilmiş Film Öneri Sistemi
+
+[![Ekran Görüntüsü](frontend/public/images/ana_ekran.png)](frontend/public/images/ana_ekran.png)
+
+Bu proje, kullanıcılara izledikleri ve puanladıkları filmlere göre kişiselleştirilmiş film önerileri sunan modern bir web uygulamasıdır. MovieLens veri seti ve TMDB API kullanılarak geliştirilmiştir.
+
+## 🚀 Öne Çıkan Özellikler
+
+*   **Film Keşfet:** Geniş bir film kataloğunu listeleyin ve popüler filmleri keşfedin.
+*   **Akıllı Arama:** Film adına göre anlık arama yapın ve sonuçları hızla görün.
+*   **Film Detayları:** TMDB API entegrasyonu sayesinde filmlerin özetini, türünü, oyuncu kadrosunu ve daha fazlasını içeren detaylı bilgilere modal pencerede erişin.
+*   **Puanlama:** Filmleri 1-5 yıldız arası puanlayın. Puanlarınız öneri algoritmasını besler ve yerel depolamada saklanır.
+*   **Favoriler:** Beğendiğiniz filmleri favori listenize ekleyin ve kolayca erişin.
+*   **Kişiselleştirilmiş Öneriler:** Puanladığınız filmlere dayanarak, Collaborative Filtering (SVD ile) modelini kullanan backend servisinden size özel film önerileri alın.
+*   **Modern Arayüz:** React, Next.js, Tailwind CSS ve Framer Motion ile oluşturulmuş, Glassmorphism efektleri ve akıcı animasyonlarla zenginleştirilmiş kullanıcı dostu bir arayüz.
+*   **Mobil Uyumlu Tasarım:** Farklı ekran boyutlarında (PC, tablet, mobil) sorunsuz bir deneyim sunar.
+
+## 🛠️ Kullanılan Teknolojiler
+
+*   **Backend:**
+    *   **Python:** Ana programlama dili.
+    *   **Flask:** Web framework'ü.
+    *   **Pandas:** Veri manipülasyonu ve analizi.
+    *   **Scikit-learn:** Makine öğrenimi (SVD modeli için).
+    *   **Joblib:** Eğitilmiş modelin diske kaydedilmesi ve yüklenmesi.
+    *   **Gunicorn:** Üretim ortamı için WSGI HTTP sunucusu.
+*   **Frontend:**
+    *   **Next.js:** React framework'ü (SSR, Routing vb.).
+    *   **React:** Kullanıcı arayüzü kütüphanesi.
+    *   **TypeScript:** Statik tipleme ile daha güvenli kod geliştirme.
+    *   **Tailwind CSS:** Hızlı UI geliştirme için yardımcı sınıf tabanlı CSS framework'ü.
+    *   **Framer Motion:** Akıcı animasyonlar ve geçişler.
+    *   **Axios:** HTTP istekleri için.
+*   **Veri Kaynakları:**
+    *   **MovieLens ml-latest:** Film derecelendirme veri seti.
+    *   **The Movie Database (TMDB) API:** Film meta verileri (özet, afiş, tür vb.).
+*   **Deployment:**
+    *   **Render:** Backend ve Frontend uygulamalarının bulutta barındırılması (Denendi, ancak bellek sorunları nedeniyle ücretsiz katmanda başarılı olunamadı).
+    *   **AWS S3:** Eğitilmiş model dosyasının depolanması.
+*   **Diğer Araçlar:**
+    *   **Git & GitHub:** Versiyon kontrolü ve kod deposu.
+    *   **VS Code & Cursor:** Kod editörü ve AI destekli geliştirme.
+
+## ⚙️ Kurulum ve Çalıştırma
+
+Projeyi yerel makinenizde çalıştırmak için aşağıdaki adımları takip edin:
+
+### Gereksinimler
+
+*   Python 3.8 veya üzeri
+*   Node.js 16 veya üzeri
+*   npm veya yarn
+*   [TMDB API Anahtarı](https://www.themoviedb.org/settings/api)
+
+### Backend Kurulumu
+
+1.  **Proje Klonlama:**
+    ```bash
+    git clone <repository_url>
+    cd <repository_name>/backend
+    ```
+2.  **Veri Setini İndirme ve Yerleştirme:**
+    *   [MovieLens Latest Datasets](https://grouplens.org/datasets/movielens/latest/) sayfasından **ml-latest.zip** dosyasını indirin.
+    *   Zip dosyasını açın ve içindeki `ml-latest` klasörünün içeriğini (özellikle `ratings.csv`, `movies.csv`, `links.csv` dosyalarını) projenizdeki `backend/data/` klasörüne kopyalayın.
+    *   **Önemli Not:** `ratings.csv` dosyası çok büyük olduğu için (`~900MB`) `.gitignore` dosyası ile Git deposuna **dahil edilmemiştir**. Bu dosyayı manuel olarak indirip eklemeniz gerekmektedir.
+3.  **Sanal Ortam Oluşturma ve Aktifleştirme:**
+    ```bash
+    # Windows
+    python -m venv venv
+    .\venv\Scripts\activate
+
+    # macOS/Linux
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+4.  **Bağımlılıkları Yükleme:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+5.  **`.env` Dosyası Oluşturma:**
+    `backend` klasöründe `.env` adında bir dosya oluşturun ve içine TMDB API anahtarınızı ekleyin:
+    ```env
+    TMDB_API_KEY=YOUR_TMDB_API_KEY
+    ```
+6.  **Model Dosyası:**
+    *   Eğitilmiş model (`.joblib` dosyası) normalde S3'den indirilir (`app.py` içindeki `MODEL_DOWNLOAD_URL` ile). Yerel çalıştırma için, ya bu URL'nin geçerli olduğundan ve model dosyasının S3'te bulunduğundan emin olun ya da modeli yerel olarak eğitip (`python models/collaborative_filter.py train` komutu ile) oluşan dosyayı `backend/models/` altına koyun ve indirme mantığını `app.py` içinde geçici olarak devre dışı bırakın/yorum satırı yapın.
+7.  **Uygulamayı Çalıştırma:**
+    ```bash
+    flask run
+    ```
+    Backend varsayılan olarak `http://127.0.0.1:5000` adresinde çalışacaktır.
+
+### Backend Dosya Yapısı ve Açıklamaları
+
+```
+backend/
+├── data/               # Manuel olarak indirilen MovieLens veri setinin bulunacağı yer (Git'e dahil değil).
+├── models/             # Makine öğrenimi modeli kodları ve S3'ten indirilen/yerel olarak eğitilen model dosyası.
+│   ├── collaborative_filter.py  # Collaborative Filtering modelini (SVD) eğiten, yükleyen ve tahmin yapan sınıf.
+│   └── [MODEL_FILENAME].joblib # Eğitilmiş model dosyası (örn: cf_svd_model_data_k10_v1.joblib).
+├── utils/              # Yardımcı fonksiyonlar.
+│   └── preprocess.py   # Ham MovieLens verisini okuyan ve işleyen fonksiyonlar (şu an doğrudan app.py içinde kullanılıyor).
+├── venv/               # Python sanal ortamı (Git'e dahil değil).
+├── .env                # Ortam değişkenleri (TMDB API Key) (Git'e dahil değil).
+├── app.py              # Ana Flask uygulaması: API endpoint'lerini tanımlar, modeli yükler, istekleri yönetir.
+└── requirements.txt    # Gerekli Python kütüphaneleri ve sürümleri.
+```
+
+### Frontend Kurulumu
+
+1.  **Frontend Klasörüne Geçme:**
+    ```bash
+    cd ../frontend
+    ```
+2.  **Bağımlılıkları Yükleme:**
+    ```bash
+    npm install
+    # veya
+    yarn install
+    ```
+3.  **`.env.local` Dosyası Oluşturma:**
+    `frontend` klasöründe `.env.local` adında bir dosya oluşturun ve içine backend API adresini ve TMDB API anahtarınızı ekleyin:
+    ```env
+    NEXT_PUBLIC_API_URL=http://127.0.0.1:5000/api
+    NEXT_PUBLIC_TMDB_API_KEY=YOUR_TMDB_API_KEY
+    ```
+4.  **Uygulamayı Çalıştırma:**
+    ```bash
+    npm run dev
+    # veya
+    yarn dev
+    ```
+    Frontend varsayılan olarak `http://localhost:3000` adresinde çalışacaktır.
+
+## ☁️ Deployment ve Karşılaşılan Zorluklar
+
+Bu uygulama **Render** platformunda canlıya alınmaya çalışılmıştır. Ancak, Render'ın ücretsiz katmanındaki **512 MB RAM limiti**, Collaborative Filtering (SVD) modelinin ve ilgili veri yapılarının (Pandas DataFrames vb.) belleğe yüklenmesi sırasında **"Out of Memory" (Bellek Yetersiz)** hatalarına neden olmuştur.
+
+Bu zorluğun üstesinden gelmek için aşağıdaki adımlar denenmiştir:
+
+1.  **Model Küçültme:** SVD modelinin karmaşıklığı, `n_components` parametresi `100`'den `10`'a düşürülerek azaltıldı. Bu, modelin disk boyutunu ve teorik bellek ihtiyacını önemli ölçüde azalttı.
+2.  **Memory Mapping (`mmap_mode`):** Backend kodunda, `joblib.load` fonksiyonu ile model yüklenirken `mmap_mode='r'` parametresi kullanıldı. Bu teknik, modelin büyük NumPy dizilerinin tamamını RAM'e kopyalamak yerine, disk üzerindeki dosya içeriğini sanal belleğe eşleyerek bellek kullanımını azaltmayı hedefler.
+
+**Sonuç:** Yapılan optimizasyonlara rağmen (`n_components=10` ve `mmap_mode`), uygulamanın toplam bellek kullanımı Render'ın ücretsiz katmanındaki 512 MB limitini **aşmaya devam etmiştir**. Bu nedenle, proje bu yapılandırma ile Render'ın ücretsiz katmanında **başarılı bir şekilde deploy edilememiştir**. Daha yüksek bellek limitlerine sahip bir platform veya daha agresif optimizasyon teknikleri (örn: daha küçük veri setleri kullanmak, farklı model türleri denemek, Pandas yerine daha az bellek tüketen kütüphaneler araştırmak) gerekmektedir.
+
+Bu deneyim, kaynak kısıtlı ortamlarda büyük makine öğrenimi modellerini dağıtırken karşılaşılan yaygın zorlukları ve optimizasyon denemelerinin sınırlarını göstermektedir.
+
+## 🖼️ Ekran Görüntüsü
+
+![Uygulama Ana Ekranı](frontend/public/images/ana_ekran.png)
+
+## 🔮 Gelecek Geliştirmeler
+
+*   Daha gelişmiş öneri algoritmaları entegrasyonu (örn: içerik tabanlı filtreleme, hibrit yaklaşımlar).
+*   Kullanıcı profilleri ve kimlik doğrulama.
+*   Modelin periyodik olarak otomatik yeniden eğitimi.
+*   Daha kapsamlı testler (birim, entegrasyon, uçtan uca).
+*   Performans optimizasyonları (API yanıt süreleri, veri yükleme stratejileri).
+*   Farklı hosting platformları veya ücretli planların değerlendirilmesi.
+
+---
