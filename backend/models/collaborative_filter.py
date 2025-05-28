@@ -10,6 +10,7 @@ import sys # Test bloğunda path için
 from collections import defaultdict # Komşu filmlerini saymak için
 
 # Öneri modeli için bir sınıf oluşturmak daha düzenli olabilir
+N_COMPONENTS = 100
 class CollaborativeFilteringModel:
     def __init__(self, n_components=N_COMPONENTS, random_state=42):
         """
